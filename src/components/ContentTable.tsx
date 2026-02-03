@@ -2,11 +2,10 @@ import { Table, Button, Typography, Card, Input, Select } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface ContentTableProps<T> {
   title: string;
-  subtitle?: string;
   columns: ColumnsType<T>;
   dataSource: T[];
   onAdd?: () => void;
@@ -15,18 +14,17 @@ interface ContentTableProps<T> {
 
 const ContentTable = <T extends { id: string }>({
   title,
-  subtitle,
   columns,
   dataSource,
   onAdd,
   loading,
 }: ContentTableProps<T>) => {
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
         <div>
-          <Title level={2} style={{ margin: 0, color: '#f8fafc', fontWeight: '800' }}>{title}</Title>
-          {subtitle && <Text style={{ color: '#64748b' }}>{subtitle}</Text>}
+          <Title level={4} className="stats-label" style={{ marginBottom: '4px' }}>Management</Title>
+          <Title level={2} style={{ margin: 0, color: '#FFFFFF', fontWeight: 700, letterSpacing: '-0.02em' }}>{title}</Title>
         </div>
         {onAdd && (
           <Button
@@ -34,9 +32,9 @@ const ContentTable = <T extends { id: string }>({
             icon={<PlusOutlined />}
             size="large"
             onClick={onAdd}
-            style={{ height: '48px', borderRadius: '12px', fontWeight: 'bold', boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)' }}
+            style={{ height: '44px', borderRadius: '10px', fontWeight: 600, padding: '0 24px' }}
           >
-            Add New
+            Create New
           </Button>
         )}
       </div>
@@ -44,11 +42,11 @@ const ContentTable = <T extends { id: string }>({
       <Card
         styles={{ body: { padding: 0 } }}
         title={
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', padding: '16px 24px' }}>
             <Input
-              placeholder="Search..."
-              prefix={<SearchOutlined style={{ color: '#64748b' }} />}
-              style={{ width: 320, borderRadius: '10px', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+              placeholder="Search record..."
+              prefix={<SearchOutlined style={{ color: '#64748B' }} />}
+              style={{ width: 320, borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#FFFFFF' }}
             />
             <Select
               defaultValue="All"

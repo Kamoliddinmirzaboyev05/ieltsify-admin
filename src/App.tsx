@@ -16,27 +16,43 @@ function App() {
       theme={{
         algorithm: antdTheme.darkAlgorithm,
         token: {
-          colorPrimary: '#8B5CF6', // Slightly brighter purple for dark mode
+          colorPrimary: '#7C3AED', // Muted Corporate Purple
           borderRadius: 12,
           fontFamily: "'Inter', sans-serif",
-          colorBgBase: '#0f172a', // Deep navy/slate black
-          colorBgContainer: '#1e293b', // Slightly lighter slate for cards
+          colorBgBase: '#0F172A', // Deep Navy Base
+          colorBgContainer: '#1E293B', // Dark Slate Container
           colorBorder: 'rgba(255, 255, 255, 0.08)',
+          colorTextBase: '#F8FAF9',
+          colorTextHeading: '#FFFFFF',
         },
         components: {
           Layout: {
-            siderBg: '#0f172a',
-            headerBg: '#0f172a',
-            bodyBg: '#0f172a',
+            siderBg: '#0F172A',
+            headerBg: 'rgba(15, 23, 42, 0.8)',
+            bodyBg: '#0F172A',
           },
           Menu: {
-            itemBg: '#0f172a',
-            itemSelectedBg: 'rgba(139, 92, 246, 0.15)',
-            itemSelectedColor: '#a78bfa',
+            itemBg: 'transparent',
+            itemSelectedBg: 'rgba(124, 58, 237, 0.08)',
+            itemSelectedColor: '#A78BFA',
+            itemActiveBg: 'transparent',
+            itemHoverBg: 'rgba(255, 255, 255, 0.03)',
+            itemMarginInline: 12,
+            itemBorderRadius: 8,
           },
           Card: {
-            colorBgContainer: '#1e293b',
-          }
+            colorBgContainer: '#1E293B',
+            borderRadiusLG: 16,
+          },
+          Button: {
+            borderRadius: 8,
+            fontWeight: 500,
+          },
+          Table: {
+            headerBg: 'transparent',
+            headerColor: '#94A3B8',
+            headerBorderRadius: 0,
+          },
         }
       }}
     >

@@ -52,13 +52,13 @@ const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#0f172a' }}>
+    <Layout style={{ minHeight: '100vh', background: '#0F172A' }}>
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}
         theme="dark"
-        width={260}
+        width={240}
         style={{
           overflow: 'auto',
           height: '100vh',
@@ -67,12 +67,12 @@ const AdminLayout: React.FC = () => {
           top: 0,
           bottom: 0,
           borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-          background: '#0f172a',
+          background: '#0F172A',
         }}
       >
         <div style={{ padding: '32px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: 32, height: 32, background: '#8B5CF6', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)' }}>I</div>
-          {!collapsed && <Text strong style={{ fontSize: '20px', color: '#f8fafc', letterSpacing: '0.025em' }}>IELTSIFY</Text>}
+          <div style={{ width: 28, height: 28, background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>I</div>
+          {!collapsed && <Text strong style={{ fontSize: '16px', color: '#F8FAFC', letterSpacing: '0.05em', fontWeight: 700 }}>IELTSIFY</Text>}
         </div>
         <Menu
           theme="dark"
@@ -80,37 +80,37 @@ const AdminLayout: React.FC = () => {
           mode="inline"
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ border: 'none', background: 'transparent', padding: '0 12px' }}
+          style={{ border: 'none', background: 'transparent' }}
         />
       </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 260, transition: 'all 0.2s', background: '#0f172a' }}>
+      <Layout style={{ marginLeft: collapsed ? 80 : 240, transition: 'all 0.2s', background: '#0F172A' }}>
         <Header
           style={{
             padding: '0 32px',
-            background: 'rgba(15, 23, 42, 0.8)',
+            background: 'rgba(15, 23, 42, 0.7)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             position: 'sticky',
             top: 0,
-            zIndex: 10,
+            zIndex: 100,
             width: '100%',
-            backdropFilter: 'blur(8px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
           }}
         >
           <Breadcrumb items={breadcrumbItems} />
           <Space size={24}>
-            <BellOutlined style={{ fontSize: 18, color: '#94a3b8', cursor: 'pointer' }} />
+            <BellOutlined style={{ fontSize: 18, color: '#64748B', cursor: 'pointer' }} />
             <Dropdown menu={userMenuItems} trigger={['click']}>
               <Space style={{ cursor: 'pointer' }}>
-                <Avatar style={{ backgroundColor: '#8B5CF6', boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)' }}>A</Avatar>
-                {!collapsed && <Text strong style={{ color: '#e2e8f0' }}>Admin User</Text>}
+                <Avatar size="small" style={{ backgroundColor: '#7C3AED' }}>A</Avatar>
+                {!collapsed && <Text style={{ color: '#E2E8F0', fontSize: '13px', fontWeight: 500 }}>Admin</Text>}
               </Space>
             </Dropdown>
           </Space>
         </Header>
-        <Content style={{ padding: '32px', minHeight: 280 }}>
+        <Content style={{ padding: '40px', minHeight: 'calc(100vh - 64px)' }}>
           <Outlet />
         </Content>
       </Layout>
