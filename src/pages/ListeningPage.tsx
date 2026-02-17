@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Upload, Trash2, Headphones, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import type { ListeningTest, PaginatedResponse } from '@/types';
+import { toast } from 'sonner';
 import './ListeningPage.css';
 
 export default function ListeningPage() {
@@ -12,7 +13,6 @@ export default function ListeningPage() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
-  const [error, setError] = useState('');
   
   // Form state
   const [title, setTitle] = useState('');
@@ -28,7 +28,6 @@ export default function ListeningPage() {
   const fetchTests = async () => {
     try {
       setFetchLoading(true);
-      setError('');
       const data = await apiClient.get<PaginatedResponse<ListeningTest>>('/listening-tests/');
       
       // Handle paginated response
@@ -40,15 +39,11 @@ export default function ListeningPage() {
       } else {
         console.error('Unexpected API response format:', data);
         setTests([]);
-        setError('Ma\'lumotlar formati noto\'g\'ri');
+        toast.error('Ma\'lumotlar formati noto\'g\'ri');
       }
     } catch (err) {
       console.error('Failed to fetch tests:', err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Testlarni yuklashda xatolik yuz berdi');
-      }
+      toast.error('Testlarni yuklashda xatolik yuz berdi');
       setTests([]);
     } finally {
       setFetchLoading(false);
@@ -56,16 +51,14 @@ export default function ListeningPage() {
   };
 
   const handleSubmit = async () => {
-    setError('');
-
     // Validation
     if (!title.trim()) {
-      setError('Sarlavha kiriting!');
+      toast.error('Sarlavha kiriting!');
       return;
     }
 
     if (!htmlFile) {
-      setError('HTML fayl yuklang!');
+      toast.error('HTML fayl yuklang!');
       return;
     }
 
@@ -76,6 +69,7 @@ export default function ListeningPage() {
       const formData = new FormData();
       formData.append('title', title.trim());
       formData.append('description', description.trim() || 'Test haqida qisqacha ma\'lumot');
+      formData.append('is_active', 'true'); // Always active as requested
       formData.append('html_file', htmlFile);
       if (coverImage) {
         formData.append('cover_image', coverImage);
@@ -97,13 +91,13 @@ export default function ListeningPage() {
       setCoverImage(null);
       setShowForm(false);
 
-      alert('Test muvaffaqiyatli yuklandi!');
+      toast.success('Test muvaffaqiyatli yuklandi!');
     } catch (err) {
       console.error('Upload failed:', err);
       if (err instanceof Error) {
-        setError(err.message);
+        toast.error(err.message);
       } else {
-        setError('Yuklashda xatolik yuz berdi!');
+        toast.error('Yuklashda xatolik yuz berdi!');
       }
     } finally {
       setLoading(false);
@@ -118,10 +112,10 @@ export default function ListeningPage() {
     try {
       await apiClient.delete(`/listening-tests/${id}/`);
       setTests(tests.filter(t => t.id !== id));
-      alert('Test o\'chirildi!');
+      toast.success('Test o\'chirildi!');
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('O\'chirishda xatolik yuz berdi!');
+      toast.error('O\'chirishda xatolik yuz berdi!');
     }
   };
 
@@ -148,13 +142,6 @@ export default function ListeningPage() {
 
         {showForm && (
           <div className="upload-form">
-            {error && (
-              <div className="error-message">
-                <span>⚠️</span>
-                <span>{error}</span>
-              </div>
-            )}
-
             <div className="form-field">
               <label className="form-label">Sarlavha *</label>
               <Input

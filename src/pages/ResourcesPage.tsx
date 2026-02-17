@@ -1,37 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, FileStack, FileText, Headphones, PenTool, BookMarked } from 'lucide-react';
+import { Plus, Trash2, FileStack, FileText, Headphones, PenTool, BookMarked, Loader2, Upload } from 'lucide-react';import { apiClient } from '@/lib/api';
+import type { SmartArticle, PodcastMaterial, PaginatedResponse, WritingTask } from '@/types';
+import { toast } from 'sonner';
 import './ResourcesPage.css';
 
-type TabType = 'article' | 'listening' | 'writing' | 'vocabulary';
-
-interface Article {
-  id: string;
-  title: string;
-  content: string;
-  level: string;
-  imageFile?: File | null;
-  uploadDate: string;
-}
-
-interface ListeningMaterial {
-  id: string;
-  name: string;
-  youtubeUrl: string;
-  category: string;
-  uploadDate: string;
-}
-
-interface WritingTask {
-  id: string;
-  title: string;
-  task1Question: string;
-  task1Image?: File | null;
-  task2Question: string;
-  uploadDate: string;
-}
+type TabType = 'article' | 'podcasts' | 'writing' | 'vocabulary';
 
 interface VocabularyItem {
   id: string;
@@ -46,23 +22,127 @@ export default function ResourcesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('article');
   
   // Article state
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [articles, setArticles] = useState<SmartArticle[]>([]);
   const [showArticleForm, setShowArticleForm] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [articleForm, setArticleForm] = useState({
     title: '',
     content: '',
-    level: 'Intermediate',
-    imageFile: null as File | null,
+    level: 'intermediate',
+    featured_image: null as File | null,
   });
 
-  // Listening state
-  const [listeningMaterials, setListeningMaterials] = useState<ListeningMaterial[]>([]);
-  const [showListeningForm, setShowListeningForm] = useState(false);
-  const [listeningForm, setListeningForm] = useState({
+  // Fetch articles when tab is active
+  useEffect(() => {
+    if (activeTab === 'article') {
+      fetchArticles();
+    }
+  }, [activeTab]);
+
+  const fetchArticles = async () => {
+    setFetchLoading(true);
+    try {
+      const data = await apiClient.get<PaginatedResponse<SmartArticle>>('/smart-articles/');
+      if (data && data.results && Array.isArray(data.results)) {
+        setArticles(data.results);
+      } else if (Array.isArray(data)) {
+        setArticles(data as unknown as SmartArticle[]);
+      } else {
+        setArticles([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch articles:', error);
+      toast.error('Articlelarni yuklashda xatolik yuz berdi');
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
+  // Article handlers
+  const handleArticleSubmit = async () => {
+    if (!articleForm.title.trim() || !articleForm.content.trim()) {
+      toast.error('Sarlavha va matnni kiriting!');
+      return;
+    }
+
+    setSubmitLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', articleForm.title);
+      formData.append('content', articleForm.content);
+      formData.append('level', articleForm.level);
+      if (articleForm.featured_image) {
+        formData.append('featured_image', articleForm.featured_image);
+      }
+
+      const newArticle = await apiClient.uploadFile<SmartArticle>('/smart-articles/', formData);
+      setArticles([newArticle, ...articles]);
+      setArticleForm({ title: '', content: '', level: 'intermediate', featured_image: null });
+      setShowArticleForm(false);
+      toast.success('Article muvaffaqiyatli qo\'shildi!');
+    } catch (error) {
+      console.error('Failed to create article:', error);
+      toast.error('Article yaratishda xatolik yuz berdi');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const handleDeleteArticle = async (id: number) => {
+    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) return;
+
+    try {
+      await apiClient.delete(`/smart-articles/${id}/`);
+      setArticles(articles.filter(a => a.id !== id));
+      toast.success('Article o\'chirildi');
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      toast.error('O\'chirishda xatolik yuz berdi');
+    }
+  };
+
+  // Podcast state
+  const [podcastMaterials, setPodcastMaterials] = useState<PodcastMaterial[]>([]);
+  const [showPodcastForm, setShowPodcastForm] = useState(false);
+  const [podcastForm, setPodcastForm] = useState({
     name: '',
-    youtubeUrl: '',
-    category: 'General',
+    youtube_url: '',
+    description: '',
   });
+
+  // Fetch podcasts when tab is active
+  useEffect(() => {
+    if (activeTab === 'podcasts') {
+      fetchPodcasts();
+    }
+  }, [activeTab]);
+
+  // Fetch writings when tab is active
+  useEffect(() => {
+    if (activeTab === 'writing') {
+      fetchWritingTasks();
+    }
+  }, [activeTab]);
+
+  const fetchPodcasts = async () => {
+    setFetchLoading(true);
+    try {
+      const data = await apiClient.get<PaginatedResponse<PodcastMaterial>>('/listening-materials/');
+      if (data && data.results && Array.isArray(data.results)) {
+        setPodcastMaterials(data.results);
+      } else if (Array.isArray(data)) {
+        setPodcastMaterials(data as unknown as PodcastMaterial[]);
+      } else {
+        setPodcastMaterials([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch podcasts:', error);
+      toast.error('Podcastlarni yuklashda xatolik yuz berdi');
+    } finally {
+      setFetchLoading(false);
+    }
+  };
 
   // Writing state
   const [writingTasks, setWritingTasks] = useState<WritingTask[]>([]);
@@ -74,6 +154,25 @@ export default function ResourcesPage() {
     task2Question: '',
   });
 
+  const fetchWritingTasks = async () => {
+    setFetchLoading(true);
+    try {
+      const data = await apiClient.get<PaginatedResponse<WritingTask>>('/writing-tasks/');
+      if (data && data.results && Array.isArray(data.results)) {
+        setWritingTasks(data.results);
+      } else if (Array.isArray(data)) {
+        setWritingTasks(data as unknown as WritingTask[]);
+      } else {
+        setWritingTasks([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch writing tasks:', error);
+      toast.error('Writing tasklarni yuklashda xatolik yuz berdi');
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
   // Vocabulary state
   const [vocabularyItems, setVocabularyItems] = useState<VocabularyItem[]>([]);
   const [showVocabularyForm, setShowVocabularyForm] = useState(false);
@@ -84,52 +183,91 @@ export default function ResourcesPage() {
     level: 'Intermediate',
   });
 
-  // Article handlers
-  const handleArticleSubmit = () => {
-    if (!articleForm.title.trim() || !articleForm.content.trim()) {
-      alert('Sarlavha va matnni kiriting!');
+  // Podcast handlers
+  const handlePodcastSubmit = async () => {
+    if (!podcastForm.name.trim() || !podcastForm.youtube_url.trim()) {
+      toast.error('Nom va YouTube URL kiriting!');
       return;
     }
-    const newArticle: Article = {
-      id: Date.now().toString(),
-      ...articleForm,
-      uploadDate: new Date().toLocaleDateString('uz-UZ'),
-    };
-    setArticles([...articles, newArticle]);
-    setArticleForm({ title: '', content: '', level: 'Intermediate', imageFile: null });
-    setShowArticleForm(false);
+
+    setSubmitLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('name', podcastForm.name);
+      formData.append('youtube_url', podcastForm.youtube_url);
+      if (podcastForm.description) formData.append('description', podcastForm.description);
+
+      const newMaterial = await apiClient.uploadFile<PodcastMaterial>('/listening-materials/', formData);
+      setPodcastMaterials([newMaterial, ...podcastMaterials]);
+      setPodcastForm({ 
+        name: '', 
+        youtube_url: '', 
+        description: '',
+        
+      });
+      setShowPodcastForm(false);
+      toast.success('Podcast muvaffaqiyatli qo\'shildi!');
+    } catch (error) {
+      console.error('Failed to create podcast:', error);
+      toast.error('Podcast yaratishda xatolik yuz berdi');
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
-  // Listening handlers
-  const handleListeningSubmit = () => {
-    if (!listeningForm.name.trim() || !listeningForm.youtubeUrl.trim()) {
-      alert('Nom va YouTube URL kiriting!');
-      return;
+  const handleDeletePodcast = async (id: number) => {
+    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) return;
+
+    try {
+      await apiClient.delete(`/listening-materials/${id}/`);
+      setPodcastMaterials(podcastMaterials.filter(m => m.id !== id));
+      toast.success('Podcast o\'chirildi');
+    } catch (error) {
+      console.error('Failed to delete podcast:', error);
+      toast.error('O\'chirishda xatolik yuz berdi');
     }
-    const newMaterial: ListeningMaterial = {
-      id: Date.now().toString(),
-      ...listeningForm,
-      uploadDate: new Date().toLocaleDateString('uz-UZ'),
-    };
-    setListeningMaterials([...listeningMaterials, newMaterial]);
-    setListeningForm({ name: '', youtubeUrl: '', category: 'General' });
-    setShowListeningForm(false);
   };
 
   // Writing handlers
-  const handleWritingSubmit = () => {
-    if (!writingForm.title.trim()) {
-      alert('Sarlavha kiriting!');
+  const handleWritingSubmit = async () => {
+    if (!writingForm.title.trim() || !writingForm.task1Question.trim() || !writingForm.task2Question.trim()) {
+      toast.error('Sarlavha va savollarni to\'ldiring!');
       return;
     }
-    const newTask: WritingTask = {
-      id: Date.now().toString(),
-      ...writingForm,
-      uploadDate: new Date().toLocaleDateString('uz-UZ'),
-    };
-    setWritingTasks([...writingTasks, newTask]);
-    setWritingForm({ title: '', task1Question: '', task1Image: null, task2Question: '' });
-    setShowWritingForm(false);
+    setSubmitLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', writingForm.title);
+      formData.append('task1_question', writingForm.task1Question);
+      formData.append('task2_question', writingForm.task2Question);
+      formData.append('is_active', 'true');
+      if (writingForm.task1Image) {
+        formData.append('task1_image', writingForm.task1Image);
+      }
+
+      const newTask = await apiClient.uploadFile<WritingTask>('/writing-tasks/', formData);
+      setWritingTasks([newTask, ...writingTasks]);
+      setWritingForm({ title: '', task1Question: '', task1Image: null, task2Question: '' });
+      setShowWritingForm(false);
+      toast.success('Writing task muvaffaqiyatli qo\'shildi!');
+    } catch (error) {
+      console.error('Failed to create writing task:', error);
+      toast.error('Writing task yaratishda xatolik yuz berdi');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const handleDeleteWriting = async (id: number) => {
+    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) return;
+    try {
+      await apiClient.delete(`/writing-tasks/${id}/`);
+      setWritingTasks(writingTasks.filter(t => t.id !== id));
+      toast.success('Writing task o\'chirildi');
+    } catch (error) {
+      console.error('Failed to delete writing task:', error);
+      toast.error('O\'chirishda xatolik yuz berdi');
+    }
   };
 
   // Vocabulary handlers
@@ -150,7 +288,7 @@ export default function ResourcesPage() {
 
   const tabs = [
     { id: 'article' as TabType, label: 'Article', icon: FileText },
-    { id: 'listening' as TabType, label: 'Listening', icon: Headphones },
+    { id: 'podcasts' as TabType, label: 'Podcasts', icon: Headphones },
     { id: 'writing' as TabType, label: 'Writing', icon: PenTool },
     { id: 'vocabulary' as TabType, label: 'Vocabulary', icon: BookMarked },
   ];
@@ -204,6 +342,7 @@ export default function ResourcesPage() {
                     value={articleForm.title}
                     onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })}
                     className="form-input"
+                    disabled={submitLoading}
                   />
                 </div>
 
@@ -215,6 +354,7 @@ export default function ResourcesPage() {
                     value={articleForm.content}
                     onChange={(e) => setArticleForm({ ...articleForm, content: e.target.value })}
                     rows={8}
+                    disabled={submitLoading}
                   />
                 </div>
 
@@ -225,26 +365,47 @@ export default function ResourcesPage() {
                       className="form-select"
                       value={articleForm.level}
                       onChange={(e) => setArticleForm({ ...articleForm, level: e.target.value })}
+                      disabled={submitLoading}
                     >
-                      <option value="Beginner">Beginner</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Advanced">Advanced</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
                     </select>
                   </div>
 
                   <div className="form-field">
                     <label className="form-label">Rasm (ixtiyoriy)</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setArticleForm({ ...articleForm, imageFile: e.target.files?.[0] || null })}
-                      className="form-file-input"
-                    />
+                    <div className="file-upload-wrapper">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setArticleForm({ ...articleForm, featured_image: e.target.files?.[0] || null })}
+                        className="hidden-file-input"
+                        id="article-image"
+                        disabled={submitLoading}
+                        style={{ display: 'none' }}
+                      />
+                      <label htmlFor="article-image" className="file-upload-label">
+                        <Upload size={18} className="mr-2" />
+                        {articleForm.featured_image ? articleForm.featured_image.name : 'Rasm yuklash'}
+                      </label>
+                    </div>
                   </div>
                 </div>
 
-                <Button onClick={handleArticleSubmit} className="submit-button">
-                  Qo'shish
+                <Button 
+                  onClick={handleArticleSubmit} 
+                  className="submit-button"
+                  disabled={submitLoading}
+                >
+                  {submitLoading ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={18} />
+                      Yuklanmoqda...
+                    </>
+                  ) : (
+                    'Qo\'shish'
+                  )}
                 </Button>
               </div>
             )}
@@ -252,7 +413,12 @@ export default function ResourcesPage() {
 
           <Card className="items-section">
             <h2 className="section-title">Mavjud Articlelar ({articles.length})</h2>
-            {articles.length === 0 ? (
+            {fetchLoading ? (
+              <div className="empty-state">
+                <Loader2 className="animate-spin empty-icon" />
+                <p className="empty-text">Yuklanmoqda...</p>
+              </div>
+            ) : articles.length === 0 ? (
               <div className="empty-state">
                 <FileText className="empty-icon" />
                 <p className="empty-text">Hali articlelar yo'q</p>
@@ -263,14 +429,14 @@ export default function ResourcesPage() {
                   <div key={article.id} className="item-card">
                     <div className="item-info">
                       <h3 className="item-title">{article.title}</h3>
-                      <p className="item-subtitle">{article.level} • {article.uploadDate}</p>
+                      <p className="item-subtitle">{article.level} • {new Date(article.created_at).toLocaleDateString('uz-UZ')}</p>
                     </div>
                     <Button
                       variant="destructive"
                       size="icon"
-                      onClick={() => setArticles(articles.filter(a => a.id !== article.id))}
+                      onClick={() => handleDeleteArticle(article.id)}
                     >
-                      <Trash2 />
+                      <Trash2 size={18} />
                     </Button>
                   </div>
                 ))}
@@ -280,27 +446,28 @@ export default function ResourcesPage() {
         </div>
       )}
 
-      {/* Listening Tab */}
-      {activeTab === 'listening' && (
+      {/* Podcast Tab */}
+      {activeTab === 'podcasts' && (
         <div className="tab-content">
           <Card className="upload-section">
             <button 
               className="collapse-button"
-              onClick={() => setShowListeningForm(!showListeningForm)}
+              onClick={() => setShowPodcastForm(!showPodcastForm)}
             >
               <Plus className="collapse-icon" />
-              <span>Yangi Listening Material</span>
+              <span>Yangi Podcast</span>
             </button>
 
-            {showListeningForm && (
+            {showPodcastForm && (
               <div className="upload-form">
                 <div className="form-field">
                   <label className="form-label">Nomi *</label>
                   <Input
                     placeholder="Masalan: IELTS Listening Practice"
-                    value={listeningForm.name}
-                    onChange={(e) => setListeningForm({ ...listeningForm, name: e.target.value })}
+                    value={podcastForm.name}
+                    onChange={(e) => setPodcastForm({ ...podcastForm, name: e.target.value })}
                     className="form-input"
+                    disabled={submitLoading}
                   />
                 </div>
 
@@ -308,54 +475,88 @@ export default function ResourcesPage() {
                   <label className="form-label">YouTube URL *</label>
                   <Input
                     placeholder="https://www.youtube.com/watch?v=..."
-                    value={listeningForm.youtubeUrl}
-                    onChange={(e) => setListeningForm({ ...listeningForm, youtubeUrl: e.target.value })}
+                    value={podcastForm.youtube_url}
+                    onChange={(e) => setPodcastForm({ ...podcastForm, youtube_url: e.target.value })}
                     className="form-input"
+                    disabled={submitLoading}
                   />
                 </div>
 
                 <div className="form-field">
-                  <label className="form-label">Kategoriya *</label>
+                  <label className="form-label">Qiyinchilik</label>
                   <select
                     className="form-select"
-                    value={listeningForm.category}
-                    onChange={(e) => setListeningForm({ ...listeningForm, category: e.target.value })}
+                    onChange={(e) => setPodcastForm({ ...podcastForm })}
+                    disabled={submitLoading}
                   >
-                    <option value="General">General</option>
-                    <option value="Academic">Academic</option>
-                    <option value="Podcast">Podcast</option>
-                    <option value="Interview">Interview</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
                   </select>
                 </div>
 
-                <Button onClick={handleListeningSubmit} className="submit-button">
-                  Qo'shish
+                
+
+                <div className="form-field">
+                  <label className="form-label">Tavsif (ixtiyoriy)</label>
+                  <textarea
+                    className="form-textarea"
+                    placeholder="Podcast haqida qisqacha..."
+                    value={podcastForm.description}
+                    onChange={(e) => setPodcastForm({ ...podcastForm, description: e.target.value })}
+                    rows={4}
+                    disabled={submitLoading}
+                  />
+                </div>
+
+                
+
+                <Button 
+                  onClick={handlePodcastSubmit} 
+                  className="submit-button"
+                  disabled={submitLoading}
+                >
+                  {submitLoading ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={18} />
+                      Yuklanmoqda...
+                    </>
+                  ) : (
+                    'Qo\'shish'
+                  )}
                 </Button>
               </div>
             )}
           </Card>
 
           <Card className="items-section">
-            <h2 className="section-title">Mavjud Materiallar ({listeningMaterials.length})</h2>
-            {listeningMaterials.length === 0 ? (
+            <h2 className="section-title">Mavjud Podcastlar ({podcastMaterials.length})</h2>
+            {fetchLoading ? (
+              <div className="empty-state">
+                <Loader2 className="animate-spin empty-icon" />
+                <p className="empty-text">Yuklanmoqda...</p>
+              </div>
+            ) : podcastMaterials.length === 0 ? (
               <div className="empty-state">
                 <Headphones className="empty-icon" />
-                <p className="empty-text">Hali materiallar yo'q</p>
+                <p className="empty-text">Hali podcastlar yo'q</p>
               </div>
             ) : (
               <div className="items-list">
-                {listeningMaterials.map((material) => (
+                {podcastMaterials.map((material) => (
                   <div key={material.id} className="item-card">
                     <div className="item-info">
                       <h3 className="item-title">{material.name}</h3>
-                      <p className="item-subtitle">{material.category} • {material.uploadDate}</p>
+                      <p className="item-subtitle">
+                        {material.category} • • {new Date(material.created_at).toLocaleDateString('uz-UZ')}
+                      </p>
                     </div>
                     <Button
                       variant="destructive"
                       size="icon"
-                      onClick={() => setListeningMaterials(listeningMaterials.filter(m => m.id !== material.id))}
+                      onClick={() => handleDeletePodcast(material.id)}
                     >
-                      <Trash2 />
+                      <Trash2 size={18} />
                     </Button>
                   </div>
                 ))}
@@ -450,12 +651,12 @@ export default function ResourcesPage() {
                   <div key={task.id} className="item-card">
                     <div className="item-info">
                       <h3 className="item-title">{task.title}</h3>
-                      <p className="item-subtitle">{task.uploadDate}</p>
+                      <p className="item-subtitle">{task.created_at ? new Date(task.created_at).toLocaleDateString('uz-UZ') : ''}</p>
                     </div>
                     <Button
                       variant="destructive"
                       size="icon"
-                      onClick={() => setWritingTasks(writingTasks.filter(t => t.id !== task.id))}
+                      onClick={() => handleDeleteWriting(task.id)}
                     >
                       <Trash2 />
                     </Button>

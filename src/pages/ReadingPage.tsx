@@ -1,48 +1,121 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Upload, Trash2, BookOpen, FileText } from 'lucide-react';
+import { Plus, Upload, Trash2, BookOpen, Loader2, FileText, Image as ImageIcon } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import type { ReadingTest, PaginatedResponse } from '@/types';
+import { toast } from 'sonner';
 import './ReadingPage.css';
 
-interface ReadingPassage {
-  id: string;
-  title: string;
-  htmlFile?: File | null;
-  imageFile?: File | null;
-  uploadDate: string;
-}
-
 export default function ReadingPage() {
-  const [passages, setPassages] = useState<ReadingPassage[]>([]);
+  const [passages, setPassages] = useState<ReadingTest[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
+  
+  // Form state
   const [title, setTitle] = useState('');
   const [htmlFile, setHtmlFile] = useState<File | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
 
-  const handleSubmit = () => {
+  // Fetch passages on mount
+  useEffect(() => {
+    fetchPassages();
+  }, []);
+
+  const fetchPassages = async () => {
+    try {
+      setFetchLoading(true);
+      const data = await apiClient.get<PaginatedResponse<ReadingTest>>('/reading-passages/');
+      
+      // Handle paginated response
+      if (data && data.results && Array.isArray(data.results)) {
+        setPassages(data.results);
+      } else if (Array.isArray(data)) {
+        // Fallback: if API returns array directly
+        setPassages(data as unknown as ReadingTest[]);
+      } else {
+        console.error('Unexpected API response format:', data);
+        setPassages([]);
+        toast.error('Ma\'lumotlar formati noto\'g\'ri');
+      }
+    } catch (err) {
+      console.error('Failed to fetch passages:', err);
+      toast.error('Reading passagelarni yuklashda xatolik yuz berdi');
+      setPassages([]);
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    // Validation
     if (!title.trim()) {
-      alert('Sarlavha kiriting!');
+      toast.error('Sarlavha kiriting!');
       return;
     }
 
-    const newPassage: ReadingPassage = {
-      id: Date.now().toString(),
-      title,
-      htmlFile,
-      imageFile,
-      uploadDate: new Date().toLocaleDateString('uz-UZ'),
-    };
+    if (!htmlFile) {
+      toast.error('HTML fayl yuklang!');
+      return;
+    }
 
-    setPassages([...passages, newPassage]);
-    setTitle('');
-    setHtmlFile(null);
-    setImageFile(null);
-    setShowForm(false);
+    setLoading(true);
+
+    try {
+      // Create FormData
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      formData.append('difficulty', 'medium'); // Default to medium as requested
+      formData.append('is_active', 'true'); // Always active as requested
+      formData.append('html_content', htmlFile);
+      
+      if (coverImage) {
+        formData.append('cover_image', coverImage);
+      }
+
+      // Upload to API
+      const newPassage = await apiClient.uploadFile<ReadingTest>(
+        '/reading-passages/',
+        formData
+      );
+
+      // Add to list
+      setPassages([newPassage, ...passages]);
+
+      // Reset form
+      setTitle('');
+      setHtmlFile(null);
+      setCoverImage(null);
+      setShowForm(false);
+
+      toast.success('Reading passage muvaffaqiyatli yuklandi!');
+    } catch (err) {
+      console.error('Upload failed:', err);
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error('Yuklashda xatolik yuz berdi!');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setPassages(passages.filter(p => p.id !== id));
+  const handleDelete = async (id: number) => {
+    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(`/reading-passages/${id}/`);
+      setPassages(passages.filter(p => p.id !== id));
+      toast.success('Passage o\'chirildi!');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      toast.error('O\'chirishda xatolik yuz berdi!');
+    }
   };
 
   return (
@@ -75,6 +148,7 @@ export default function ReadingPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="form-input"
+                disabled={loading}
               />
             </div>
 
@@ -84,77 +158,104 @@ export default function ReadingPage() {
                 <div className="file-upload-button-group">
                   <input
                     type="file"
-                    accept=".html"
+                    accept=".html,.htm"
                     onChange={(e) => setHtmlFile(e.target.files?.[0] || null)}
                     style={{ display: 'none' }}
                     id="html-file"
+                    disabled={loading}
                   />
                   <label htmlFor="html-file" className="file-upload-label">
                     <Upload className="upload-icon" />
-                    <span>HTML fayl yuklash</span>
+                    <span>{htmlFile ? htmlFile.name : 'HTML fayl yuklash'}</span>
                   </label>
-                  {htmlFile && <span className="file-name">{htmlFile.name}</span>}
                 </div>
               </div>
 
               <div className="file-upload-group">
-                <label className="form-label">Rasm (ixtiyoriy)</label>
+                <label className="form-label">Muqova rasmi (ixtiyoriy)</label>
                 <div className="file-upload-button-group">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
                     style={{ display: 'none' }}
-                    id="image-file"
+                    id="cover-image"
+                    disabled={loading}
                   />
-                  <label htmlFor="image-file" className="file-upload-label">
-                    <Upload className="upload-icon" />
-                    <span>Rasm yuklash</span>
+                  <label htmlFor="cover-image" className="file-upload-label">
+                    <ImageIcon className="upload-icon" />
+                    <span>{coverImage ? coverImage.name : 'Rasm yuklash'}</span>
                   </label>
-                  {imageFile && <span className="file-name">{imageFile.name}</span>}
                 </div>
               </div>
             </div>
 
             <Button 
-              onClick={handleSubmit}
               className="submit-button"
+              onClick={handleSubmit}
+              disabled={loading}
             >
-              Qo'shish
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={18} />
+                  Yuklanmoqda...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2" size={18} />
+                  Saqlash
+                </>
+              )}
             </Button>
           </div>
         )}
       </Card>
 
-      <Card className="passages-section">
-        <h2 className="section-title">Mavjud Passagelar ({passages.length})</h2>
-        
-        {passages.length === 0 ? (
-          <div className="empty-state">
-            <FileText className="empty-icon" />
-            <p className="empty-text">Hali passagelar yo'q</p>
+      <div className="passages-list">
+        {fetchLoading ? (
+          <div className="loading-state" style={{ textAlign: 'center', padding: '2rem' }}>
+            <Loader2 className="animate-spin mx-auto text-primary" size={32} />
+            <p className="mt-2 text-muted-foreground">Yuklanmoqda...</p>
+          </div>
+        ) : passages.length === 0 ? (
+          <div className="empty-state" style={{ textAlign: 'center', padding: '3rem', background: 'var(--card)', borderRadius: '0.75rem', border: '1px solid var(--border)' }}>
+            <BookOpen className="mx-auto text-muted-foreground mb-3" size={48} />
+            <h3 className="text-lg font-medium">Hozircha reading passagelar yo'q</h3>
+            <p className="text-muted-foreground">Yangi passage qo'shish uchun yuqoridagi tugmani bosing</p>
           </div>
         ) : (
-          <div className="passages-list">
+          <div className="grid gap-4">
             {passages.map((passage) => (
-              <div key={passage.id} className="passage-card">
+              <Card key={passage.id} className="passage-card">
                 <div className="passage-info">
-                  <h3 className="passage-title">{passage.title}</h3>
-                  <p className="passage-date">{passage.uploadDate}</p>
+                  <div className={`passage-icon-wrapper icon-${passage.difficulty}`}>
+                    <FileText size={24} />
+                  </div>
+                  <div className="passage-details">
+                    <h3>{passage.title}</h3>
+                    <div className="passage-meta">
+                      <span>{new Date(passage.created_at).toLocaleDateString('uz-UZ')}</span>
+                      <span>•</span>
+                      <span className={passage.is_active ? 'status-active' : 'status-inactive'}>
+                        {passage.is_active ? 'Faol' : 'Nofaol'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <Button
-                  variant="destructive"
+                
+                <Button 
+                  variant="ghost" 
                   size="icon"
-                  onClick={() => handleDelete(passage.id)}
                   className="delete-button"
+                  onClick={() => handleDelete(passage.id)}
                 >
-                  <Trash2 />
+                  <Trash2 size={20} />
                 </Button>
-              </div>
+              </Card>
             ))}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
