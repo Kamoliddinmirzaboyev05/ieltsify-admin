@@ -77,6 +77,35 @@ class ApiClient {
         headers,
       });
 
+      // Handle 401 Unauthorized - Try to refresh token
+      if (response.status === 401 && !endpoint.includes('/token')) {
+        console.log('Access token expired, trying to refresh...');
+        try {
+          const newAccessToken = await this.refreshAccessToken();
+          if (newAccessToken) {
+            console.log('Token refresh successful, retrying request...');
+            // Update header with new token
+            headers['Authorization'] = `Bearer ${newAccessToken}`;
+            // Retry original request
+            const retryResponse = await fetch(url, {
+              ...options,
+              headers,
+            });
+            
+            if (retryResponse.ok) {
+              return await retryResponse.json();
+            }
+            // If retry also fails, fall through to error handling
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          this.clearTokensFromStorage();
+          sessionStorage.removeItem('user'); // Also clear user data
+          window.location.href = '/login';
+          throw new Error('Session expired. Please login again.');
+        }
+      }
+
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         
@@ -224,6 +253,34 @@ class ApiClient {
         headers,
         body: formData,
       });
+
+      // Handle 401 Unauthorized - Try to refresh token
+      if (response.status === 401 && !endpoint.includes('/token')) {
+        console.log('Access token expired during upload, trying to refresh...');
+        try {
+          const newAccessToken = await this.refreshAccessToken();
+          if (newAccessToken) {
+            console.log('Token refresh successful, retrying upload...');
+            headers['Authorization'] = `Bearer ${newAccessToken}`;
+            
+            const retryResponse = await fetch(url, {
+              method: 'POST',
+              headers,
+              body: formData,
+            });
+            
+            if (retryResponse.ok) {
+              return await retryResponse.json();
+            }
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed during upload:', refreshError);
+          this.clearTokensFromStorage();
+          sessionStorage.removeItem('user');
+          window.location.href = '/login';
+          throw new Error('Session expired. Please login again.');
+        }
+      }
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
