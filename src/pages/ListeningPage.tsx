@@ -1,325 +1,277 @@
-import React, { useState } from 'react';
-import {
-  Form,
-  Input,
-  Select,
-  Button,
-  Modal,
-  Upload,
-  Space,
-  Card,
-  Tag,
-  Typography,
-  Row,
-  Col,
-  Divider,
-  Tooltip,
-} from 'antd';
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-  InboxOutlined,
-} from '@ant-design/icons';
-import { Table } from 'antd';
-import { mockListening } from '../mock/data';
-import type { ListeningMaterial, Difficulty } from '../types';
-import type { ColumnsType } from 'antd/es/table';
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Plus, Upload, Trash2, Headphones, Loader2 } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import type { ListeningTest, PaginatedResponse } from '@/types';
+import './ListeningPage.css';
 
-const { TextArea } = Input;
-const { Text, Title } = Typography;
-const { Dragger } = Upload;
+export default function ListeningPage() {
+  const [tests, setTests] = useState<ListeningTest[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // Form state
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [htmlFile, setHtmlFile] = useState<File | null>(null);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
 
-const ListeningPage: React.FC = () => {
-  const [data, setData] = useState<ListeningMaterial[]>(mockListening);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [form] = Form.useForm();
+  // Fetch tests on mount
+  useEffect(() => {
+    fetchTests();
+  }, []);
 
-  const columns: ColumnsType<ListeningMaterial> = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-      render: (id: string) => <Text style={{ color: '#64748b', fontSize: '12px', fontFamily: 'monospace' }}>#{id}</Text>,
-    },
-    {
-      title: 'TITLE',
-      dataIndex: 'title',
-      key: 'title',
-      render: (title: string) => <Text strong style={{ color: '#f1f5f9' }}>{title}</Text>,
-    },
-    {
-      title: 'AUDIO FILE',
-      dataIndex: 'audioFileName',
-      key: 'audioFileName',
-      render: (fileName: string) => <Text style={{ color: '#94a3b8' }}>{fileName}</Text>,
-    },
-    {
-      title: 'DIFFICULTY',
-      dataIndex: 'difficulty',
-      key: 'difficulty',
-      render: (difficulty: Difficulty) => {
-        let color: string = '';
-        if (difficulty === 'Easy') color = 'success';
-        else if (difficulty === 'Medium') color = 'warning';
-        else color = 'error';
-        return <Tag color={color} style={{ borderRadius: '6px', border: 'none', background: `${color === 'success' ? '#064e3b' : color === 'warning' ? '#78350f' : '#7f1d1d'}`, color: `${color === 'success' ? '#10b981' : color === 'warning' ? '#fbbf24' : '#f87171'}` }}>{difficulty}</Tag>;
-      },
-    },
-    {
-      title: 'ACTIONS',
-      key: 'actions',
-      width: 120,
-      render: (_, record: ListeningMaterial) => (
-        <Space size="small">
-          <Tooltip title="Edit">
-            <Button
-              type="text"
-              icon={<EditOutlined style={{ color: '#8B5CF6' }} />}
-              onClick={() => console.log('Edit', record.id)}
-            />
-          </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => setData(data.filter((item) => item.id !== record.id))}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
-
-  const handleAdd = (values: any) => {
-    const newItem: ListeningMaterial = {
-      id: (data.length + 1).toString(),
-      ...values,
-      audioFileName: values.audioFile?.[0]?.name || 'uploaded_audio.mp3',
-      questions: values.questions || [],
-    };
-    setData([...data, newItem]);
-    setIsModalOpen(false);
-    form.resetFields();
+  const fetchTests = async () => {
+    try {
+      setFetchLoading(true);
+      setError('');
+      const data = await apiClient.get<PaginatedResponse<ListeningTest>>('/listening-tests/');
+      
+      // Handle paginated response
+      if (data && data.results && Array.isArray(data.results)) {
+        setTests(data.results);
+      } else if (Array.isArray(data)) {
+        // Fallback: if API returns array directly
+        setTests(data as unknown as ListeningTest[]);
+      } else {
+        console.error('Unexpected API response format:', data);
+        setTests([]);
+        setError('Ma\'lumotlar formati noto\'g\'ri');
+      }
+    } catch (err) {
+      console.error('Failed to fetch tests:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Testlarni yuklashda xatolik yuz berdi');
+      }
+      setTests([]);
+    } finally {
+      setFetchLoading(false);
+    }
   };
 
-  const filteredData = data.filter((item) =>
-    item.title.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const handleSubmit = async () => {
+    setError('');
+
+    // Validation
+    if (!title.trim()) {
+      setError('Sarlavha kiriting!');
+      return;
+    }
+
+    if (!htmlFile) {
+      setError('HTML fayl yuklang!');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Create FormData
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      formData.append('description', description.trim() || 'Test haqida qisqacha ma\'lumot');
+      formData.append('html_file', htmlFile);
+      if (coverImage) {
+        formData.append('cover_image', coverImage);
+      }
+
+      // Upload to API
+      const newTest = await apiClient.uploadFile<ListeningTest>(
+        '/listening-tests/',
+        formData
+      );
+
+      // Add to list
+      setTests([newTest, ...tests]);
+
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setHtmlFile(null);
+      setCoverImage(null);
+      setShowForm(false);
+
+      alert('Test muvaffaqiyatli yuklandi!');
+    } catch (err) {
+      console.error('Upload failed:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Yuklashda xatolik yuz berdi!');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(`/listening-tests/${id}/`);
+      setTests(tests.filter(t => t.id !== id));
+      alert('Test o\'chirildi!');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('O\'chirishda xatolik yuz berdi!');
+    }
+  };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-          <Title level={2} style={{ margin: 0, color: '#f8fafc', fontWeight: '800' }}>Listening Tests</Title>
-          <Text style={{ color: '#64748b' }}>Manage your audio materials and question sets.</Text>
+    <div className="listening-manager-page">
+      <div className="page-title-section">
+        <div className="page-title-content">
+          <Headphones className="page-title-icon" />
+          <div>
+            <h1 className="page-title">Listening Test Manager</h1>
+            <p className="page-subtitle">Listening mock test uchun HTML fayllar yuklang</p>
+          </div>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          size="large"
-          onClick={() => setIsModalOpen(true)}
-          style={{ height: '48px', borderRadius: '12px', fontWeight: 'bold', boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)' }}
-        >
-          Add New Test
-        </Button>
       </div>
 
-      <Card
-        styles={{ body: { padding: 0 } }}
-        style={{ overflow: 'hidden' }}
-        title={
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-            <Input
-              placeholder="Search by title..."
-              prefix={<SearchOutlined style={{ color: '#64748b' }} />}
-              style={{ width: 320, borderRadius: '10px', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)' }}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
-            />
-            <Select
-              defaultValue="All"
-              style={{ width: 180 }}
-              options={[
-                { value: 'All', label: 'All Difficulties' },
-                { value: 'Easy', label: 'Easy' },
-                { value: 'Medium', label: 'Medium' },
-                { value: 'Hard', label: 'Hard' },
-              ]}
-            />
+      <Card className="upload-section">
+        <button 
+          className="collapse-button"
+          onClick={() => setShowForm(!showForm)}
+        >
+          <Plus className="collapse-icon" />
+          <span>Yangi Listening Test</span>
+        </button>
+
+        {showForm && (
+          <div className="upload-form">
+            {error && (
+              <div className="error-message">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="form-field">
+              <label className="form-label">Sarlavha *</label>
+              <Input
+                placeholder="Masalan: IELTS Listening Practice Test 1"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="form-input"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="form-label">Tavsif (ixtiyoriy)</label>
+              <textarea
+                className="form-textarea"
+                placeholder="Test haqida qisqacha ma'lumot"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="file-upload-row">
+              <div className="file-upload-group">
+                <label className="form-label">HTML Fayl *</label>
+                <div className="file-upload-button-group">
+                  <input
+                    type="file"
+                    accept=".html,.htm"
+                    onChange={(e) => setHtmlFile(e.target.files?.[0] || null)}
+                    style={{ display: 'none' }}
+                    id="html-file"
+                    disabled={loading}
+                  />
+                  <label htmlFor="html-file" className="file-upload-label">
+                    <Upload className="upload-icon" />
+                    <span>HTML fayl yuklash</span>
+                  </label>
+                  {htmlFile && <span className="file-name">{htmlFile.name}</span>}
+                </div>
+              </div>
+
+              <div className="file-upload-group">
+                <label className="form-label">Cover Image (ixtiyoriy)</label>
+                <div className="file-upload-button-group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
+                    style={{ display: 'none' }}
+                    id="cover-image"
+                    disabled={loading}
+                  />
+                  <label htmlFor="cover-image" className="file-upload-label">
+                    <Upload className="upload-icon" />
+                    <span>Rasm yuklash</span>
+                  </label>
+                  {coverImage && <span className="file-name">{coverImage.name}</span>}
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              onClick={handleSubmit}
+              className="submit-button"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="upload-icon animate-spin" />
+                  Yuklanmoqda...
+                </>
+              ) : (
+                'Qo\'shish'
+              )}
+            </Button>
           </div>
-        }
-      >
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          rowKey="id"
-          pagination={{ pageSize: 8 }}
-        />
+        )}
       </Card>
 
-      <Modal
-        title={
-          <div style={{ paddingBottom: '16px' }}>
-            <Title level={4} style={{ margin: 0, color: '#f1f5f9' }}>Create New Listening Content</Title>
-            <Text style={{ color: '#94a3b8' }}>Provide test details, audio and questions.</Text>
+      <Card className="tests-section">
+        <h2 className="section-title">Mavjud Testlar ({tests.length})</h2>
+        
+        {fetchLoading ? (
+          <div className="empty-state">
+            <Loader2 className="empty-icon animate-spin" />
+            <p className="empty-text">Yuklanmoqda...</p>
           </div>
-        }
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onOk={() => form.submit()}
-        width={850}
-        okText="Save Content"
-        okButtonProps={{ style: { height: '44px', borderRadius: '10px', fontWeight: '600' } }}
-        cancelButtonProps={{ style: { height: '44px', borderRadius: '10px' } }}
-        style={{ top: 40 }}
-      >
-        <Form form={form} layout="vertical" onFinish={handleAdd} style={{ marginTop: '24px' }}>
-          <Row gutter={24}>
-            <Col span={16}>
-              <Form.Item name="title" label={<Text strong style={{ color: '#e2e8f0' }}>Test Title</Text>} rules={[{ required: true }]}>
-                <Input placeholder="e.g. Conversation about Travel" size="large" style={{ background: '#0f172a' }} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="difficulty" label={<Text strong style={{ color: '#e2e8f0' }}>Difficulty</Text>} rules={[{ required: true }]}>
-                <Select size="large" style={{ background: '#0f172a' }}>
-                  <Select.Option value="Easy">Easy</Select.Option>
-                  <Select.Option value="Medium">Medium</Select.Option>
-                  <Select.Option value="Hard">Hard</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="description" label={<Text strong style={{ color: '#e2e8f0' }}>Description</Text>}>
-            <TextArea rows={3} placeholder="Optional test context..." style={{ background: '#0f172a' }} />
-          </Form.Item>
-
-          <Divider orientation={"left" as any} style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-            <Text strong style={{ color: '#8B5CF6' }}>Audio Resource</Text>
-          </Divider>
-
-          <Form.Item
-            name="audioFile"
-            valuePropName="fileList"
-            getValueFromEvent={(e: any) => (Array.isArray(e) ? e : e?.fileList)}
-            rules={[{ required: true, message: 'Please upload audio' }]}
-          >
-            <Dragger
-              beforeUpload={() => false}
-              maxCount={1}
-              style={{ background: 'rgba(139, 92, 246, 0.02)', border: '1px dashed rgba(139, 92, 246, 0.3)', borderRadius: '14px' }}
-            >
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined style={{ color: '#8B5CF6' }} />
-              </p>
-              <p className="ant-upload-text" style={{ color: '#e2e8f0', fontWeight: '600' }}>Drop audio file here</p>
-              <p className="ant-upload-hint" style={{ color: '#64748b' }}>MP3 or WAV files are supported.</p>
-            </Dragger>
-          </Form.Item>
-
-          <Divider orientation={"left" as any} style={{ borderColor: 'rgba(255, 255, 255, 0.08)', margin: '40px 0 24px' }}>
-            <Text strong style={{ color: '#8B5CF6' }}>Questions Configuration</Text>
-          </Divider>
-
-          <Form.List name="questions">
-            {(fields: any[], { add, remove }: any) => (
-              <>
-                {fields.map(({ key, name, ...restField }: any, index: number) => (
-                  <Card
-                    key={key}
-                    size="small"
-                    style={{ marginBottom: 20, background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.05)' }}
-                    title={<Text style={{ color: '#f1f5f9', fontWeight: '600' }}>Question {index + 1}</Text>}
-                    extra={
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => remove(name)}
-                      />
-                    }
-                  >
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'text']}
-                      label={<Text style={{ color: '#94a3b8', fontSize: '13px' }}>Question Label</Text>}
-                      rules={[{ required: true }]}
-                    >
-                      <Input placeholder="Enter question..." style={{ background: '#1e293b' }} />
-                    </Form.Item>
-
-                    <Row gutter={16}>
-                      <Col span={18}>
-                        <Form.List name={[name, 'options']}>
-                          {(optFields: any[], { add: addOpt, remove: removeOpt }: any) => (
-                            <div style={{ marginBottom: 16 }}>
-                              <Text style={{ color: '#64748b', fontSize: '12px', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Options</Text>
-                              {optFields.map((optField: any) => (
-                                <Form.Item key={optField.key} required={false} style={{ marginBottom: 8 }}>
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                    <Form.Item
-                                      {...optField}
-                                      validateTrigger={['onChange', 'onBlur']}
-                                      rules={[{ required: true, whitespace: true, message: "Required" }]}
-                                      noStyle
-                                    >
-                                      <Input placeholder="Option text" style={{ background: '#1e293b' }} />
-                                    </Form.Item>
-                                    <Button
-                                      type="text"
-                                      icon={<DeleteOutlined style={{ fontSize: 13 }} />}
-                                      onClick={() => removeOpt(optField.name)}
-                                    />
-                                  </div>
-                                </Form.Item>
-                              ))}
-                              <Button
-                                type="dashed"
-                                onClick={() => addOpt()}
-                                icon={<PlusOutlined />}
-                                size="small"
-                                style={{ color: '#8B5CF6', background: 'rgba(139, 92, 246, 0.05)', borderStyle: 'dashed', borderColor: '#8B5CF640' }}
-                              >
-                                Add Option
-                              </Button>
-                            </div>
-                          )}
-                        </Form.List>
-                      </Col>
-                      <Col span={6}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'correctAnswer']}
-                          label={<Text style={{ color: '#94a3b8', fontSize: '13px' }}>Correct Key</Text>}
-                          rules={[{ required: true }]}
-                        >
-                          <Input placeholder="e.g. A" style={{ background: '#1e293b' }} />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </Card>
-                ))}
+        ) : tests.length === 0 ? (
+          <div className="empty-state">
+            <Headphones className="empty-icon" />
+            <p className="empty-text">Hali testlar yo'q</p>
+          </div>
+        ) : (
+          <div className="tests-list">
+            {tests.map((test) => (
+              <div key={test.id} className="test-card">
+                <div className="test-info">
+                  <h3 className="test-title">{test.title}</h3>
+                  <p className="test-date">
+                    {new Date(test.created_at).toLocaleDateString('uz-UZ')}
+                  </p>
+                </div>
                 <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  block
-                  icon={<PlusOutlined />}
-                  style={{ height: '48px', borderRadius: '12px', color: '#8B5CF6', background: 'rgba(139, 92, 246, 0.02)', borderStyle: 'dashed', borderColor: '#8B5CF650' }}
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => handleDelete(test.id)}
+                  className="delete-button"
                 >
-                  Add Question
+                  <Trash2 />
                 </Button>
-              </>
-            )}
-          </Form.List>
-        </Form>
-      </Modal>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
-};
-
-export default ListeningPage;
+}

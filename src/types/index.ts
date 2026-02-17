@@ -1,48 +1,44 @@
-export type Difficulty = 'Easy' | 'Medium' | 'Hard';
-
-export interface Question {
+export interface ReadingPassage {
   id: string;
-  text: string;
-  options: string[];
-  correctAnswer: string;
+  title: string;
+  content: string;
+  htmlFile?: string;
+  imageFile?: string;
+  createdAt: string;
+  status: 'active' | 'draft';
 }
 
-export interface ListeningMaterial {
+export interface PassageItem {
   id: string;
+  title: string;
+  date: string;
+}
+
+export interface ListeningTest {
+  id: number;
   title: string;
   description: string;
-  audioFileName: string;
-  difficulty: Difficulty;
-  questions: Question[];
+  html_file: string;
+  cover_image: string | null;
+  difficulty: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface ReadingMaterial {
-  id: string;
+export interface ListeningTestCreate {
   title: string;
-  passage: string;
-  difficulty: Difficulty;
-  questions: Question[];
+  description: string;
+  html_file: File;
+  cover_image?: File | null;
+  difficulty: string;
+  is_active: boolean;
 }
 
-export interface WritingMaterial {
-  id: string;
-  taskType: 'Task 1' | 'Task 2';
-  prompt: string;
-  imageFileName?: string;
-  difficulty: Difficulty;
-}
-
-export interface SpeakingMaterial {
-  id: string;
-  topic: string;
-  part1Questions: string[];
-  part2Questions: string[];
-  part3Questions: string[];
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'Admin' | 'Student';
+// Paginated API Response
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }

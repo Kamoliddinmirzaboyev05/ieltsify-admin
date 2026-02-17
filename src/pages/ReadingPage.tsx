@@ -1,117 +1,160 @@
-import React, { useState } from 'react';
-import { Form, Input, Select, Modal, Space, Tag, Typography, Tooltip, Button } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import ContentTable from '../components/ContentTable';
-import { mockReading } from '../mock/data';
-import type { ReadingMaterial, Difficulty } from '../types';
-import type { ColumnsType } from 'antd/es/table';
+import { useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Plus, Upload, Trash2, BookOpen, FileText } from 'lucide-react';
+import './ReadingPage.css';
 
-const { TextArea } = Input;
-const { Text, Title } = Typography;
+interface ReadingPassage {
+  id: string;
+  title: string;
+  htmlFile?: File | null;
+  imageFile?: File | null;
+  uploadDate: string;
+}
 
-const ReadingPage: React.FC = () => {
-  const [data, setData] = useState<ReadingMaterial[]>(mockReading);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form] = Form.useForm();
+export default function ReadingPage() {
+  const [passages, setPassages] = useState<ReadingPassage[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState('');
+  const [htmlFile, setHtmlFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const columns: ColumnsType<ReadingMaterial> = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-      render: (id) => <Text style={{ color: '#64748b', fontSize: '12px' }}>#{id}</Text>,
-    },
-    {
-      title: 'TITLE',
-      dataIndex: 'title',
-      key: 'title',
-      render: (title) => <Text strong style={{ color: '#f1f5f9' }}>{title}</Text>,
-    },
-    {
-      title: 'DIFFICULTY',
-      dataIndex: 'difficulty',
-      key: 'difficulty',
-      render: (difficulty: Difficulty) => {
-        let color = difficulty === 'Easy' ? '#064e3b' : difficulty === 'Medium' ? '#78350f' : '#7f1d1d';
-        let text = difficulty === 'Easy' ? '#10b981' : difficulty === 'Medium' ? '#fbbf24' : '#f87171';
-        return <Tag style={{ borderRadius: '6px', border: 'none', background: color, color: text }}>{difficulty}</Tag>;
-      },
-    },
-    {
-      title: 'ACTIONS',
-      key: 'actions',
-      width: 120,
-      render: (_, record) => (
-        <Space size="middle">
-          <Tooltip title="Edit">
-            <Button type="text" icon={<EditOutlined style={{ color: '#8B5CF6' }} />} />
-          </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => setData(data.filter((item) => item.id !== record.id))}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
+  const handleSubmit = () => {
+    if (!title.trim()) {
+      alert('Sarlavha kiriting!');
+      return;
+    }
 
-  const handleAdd = (values: any) => {
-    const newItem: ReadingMaterial = {
-      id: (data.length + 1).toString(),
-      ...values,
-      questions: values.questions || [],
+    const newPassage: ReadingPassage = {
+      id: Date.now().toString(),
+      title,
+      htmlFile,
+      imageFile,
+      uploadDate: new Date().toLocaleDateString('uz-UZ'),
     };
-    setData([...data, newItem]);
-    setIsModalOpen(false);
-    form.resetFields();
+
+    setPassages([...passages, newPassage]);
+    setTitle('');
+    setHtmlFile(null);
+    setImageFile(null);
+    setShowForm(false);
+  };
+
+  const handleDelete = (id: string) => {
+    setPassages(passages.filter(p => p.id !== id));
   };
 
   return (
-    <>
-      <ContentTable
-        title="Reading Content"
-        subtitle="Manage academic reading passages and configurations."
-        columns={columns}
-        dataSource={data}
-        onAdd={() => setIsModalOpen(true)}
-      />
-
-      <Modal
-        title={
-          <div style={{ paddingBottom: '16px' }}>
-            <Title level={4} style={{ margin: 0, color: '#f1f5f9' }}>Create Reading Material</Title>
-            <Text style={{ color: '#94a3b8' }}>Include a new passage and its metadata.</Text>
+    <div className="reading-manager-page">
+      <div className="page-title-section">
+        <div className="page-title-content">
+          <BookOpen className="page-title-icon" />
+          <div>
+            <h1 className="page-title">Reading Passage Manager</h1>
+            <p className="page-subtitle">Reading mock test uchun HTML fayllar yuklang</p>
           </div>
-        }
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onOk={() => form.submit()}
-        width={800}
-        okText="Create Material"
-      >
-        <Form form={form} layout="vertical" onFinish={handleAdd} style={{ marginTop: '24px' }}>
-          <Form.Item name="title" label={<Text strong style={{ color: '#e2e8f0' }}>Passage Title</Text>} rules={[{ required: true }]}>
-            <Input placeholder="Enter title" size="large" style={{ background: '#0f172a' }} />
-          </Form.Item>
-          <Form.Item name="passage" label={<Text strong style={{ color: '#e2e8f0' }}>Passage Content</Text>} rules={[{ required: true }]}>
-            <TextArea rows={12} placeholder="Paste text here..." style={{ background: '#0f172a' }} />
-          </Form.Item>
-          <Form.Item name="difficulty" label={<Text strong style={{ color: '#e2e8f0' }}>Difficulty</Text>} rules={[{ required: true }]}>
-            <Select size="large" style={{ width: '220px', background: '#0f172a' }}>
-              <Select.Option value="Easy">Easy</Select.Option>
-              <Select.Option value="Medium">Medium</Select.Option>
-              <Select.Option value="Hard">Hard</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </>
-  );
-};
+        </div>
+      </div>
 
-export default ReadingPage;
+      <Card className="upload-section">
+        <button 
+          className="collapse-button"
+          onClick={() => setShowForm(!showForm)}
+        >
+          <Plus className="collapse-icon" />
+          <span>Yangi Reading Passage</span>
+        </button>
+
+        {showForm && (
+          <div className="upload-form">
+            <div className="form-field">
+              <label className="form-label">Sarlavha *</label>
+              <Input
+                placeholder="Masalan: The Nature of Memory"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            <div className="file-upload-row">
+              <div className="file-upload-group">
+                <label className="form-label">HTML Fayl *</label>
+                <div className="file-upload-button-group">
+                  <input
+                    type="file"
+                    accept=".html"
+                    onChange={(e) => setHtmlFile(e.target.files?.[0] || null)}
+                    style={{ display: 'none' }}
+                    id="html-file"
+                  />
+                  <label htmlFor="html-file" className="file-upload-label">
+                    <Upload className="upload-icon" />
+                    <span>HTML fayl yuklash</span>
+                  </label>
+                  {htmlFile && <span className="file-name">{htmlFile.name}</span>}
+                </div>
+              </div>
+
+              <div className="file-upload-group">
+                <label className="form-label">Rasm (ixtiyoriy)</label>
+                <div className="file-upload-button-group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    style={{ display: 'none' }}
+                    id="image-file"
+                  />
+                  <label htmlFor="image-file" className="file-upload-label">
+                    <Upload className="upload-icon" />
+                    <span>Rasm yuklash</span>
+                  </label>
+                  {imageFile && <span className="file-name">{imageFile.name}</span>}
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              onClick={handleSubmit}
+              className="submit-button"
+            >
+              Qo'shish
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      <Card className="passages-section">
+        <h2 className="section-title">Mavjud Passagelar ({passages.length})</h2>
+        
+        {passages.length === 0 ? (
+          <div className="empty-state">
+            <FileText className="empty-icon" />
+            <p className="empty-text">Hali passagelar yo'q</p>
+          </div>
+        ) : (
+          <div className="passages-list">
+            {passages.map((passage) => (
+              <div key={passage.id} className="passage-card">
+                <div className="passage-info">
+                  <h3 className="passage-title">{passage.title}</h3>
+                  <p className="passage-date">{passage.uploadDate}</p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => handleDelete(passage.id)}
+                  className="delete-button"
+                >
+                  <Trash2 />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
