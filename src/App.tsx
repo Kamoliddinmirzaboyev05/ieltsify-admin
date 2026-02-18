@@ -12,7 +12,8 @@ import NotFoundPage from './pages/NotFoundPage';
 import PageTransition from './components/ui/PageTransition';
 import './index.css';
 
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContextBase';
 import { ThemeProvider } from './contexts/ThemeProvider';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

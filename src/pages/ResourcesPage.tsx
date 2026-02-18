@@ -486,7 +486,7 @@ export default function ResourcesPage() {
                   <label className="form-label">Qiyinchilik</label>
                   <select
                     className="form-select"
-                    onChange={(e) => setPodcastForm({ ...podcastForm })}
+                    onChange={() => setPodcastForm({ ...podcastForm })}
                     disabled={submitLoading}
                   >
                     <option value="easy">Easy</option>

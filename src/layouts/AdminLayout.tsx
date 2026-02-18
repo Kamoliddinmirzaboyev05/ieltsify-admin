@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextBase';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   LayoutDashboard,
   BookOpen,
   Headphones,
   FileStack,
   User,
-  Search,
   Bell,
   Sun,
   Moon,
