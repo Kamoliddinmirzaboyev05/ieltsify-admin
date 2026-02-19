@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Users, 
@@ -7,12 +8,15 @@ import {
   Headphones, 
   FileText,
   PenTool,
-  Mic,
   ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
-  LayoutGrid
+  LayoutGrid,
+  FileStack,
+  BookMarked
 } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import type { QuickStatsResponse, DashboardStatisticsResponse } from '@/types';
 import './DashboardPage.css';
 
 const mainStats = [
@@ -42,49 +46,6 @@ const mainStats = [
   }
 ];
 
-const resourceStats = [
-  {
-    title: 'READING TESTLAR SONI',
-    value: '145',
-    change: '+3',
-    trend: 'up',
-    icon: BookOpen,
-    color: 'purple'
-  },
-  {
-    title: 'LISTENING TESTLAR SONI',
-    value: '128',
-    change: '+2',
-    trend: 'up',
-    icon: Headphones,
-    color: 'indigo'
-  },
-  {
-    title: 'WRITING TESTLAR SONI',
-    value: '86',
-    change: '+5',
-    trend: 'up',
-    icon: PenTool,
-    color: 'orange'
-  },
-  {
-    title: 'SPEAKING TESTLAR SONI',
-    value: '54',
-    change: '+4',
-    trend: 'up',
-    icon: Mic,
-    color: 'cyan'
-  },
-  {
-    title: 'MAQOLALAR SONI',
-    value: '64',
-    change: '+4',
-    trend: 'up',
-    icon: FileText,
-    color: 'pink'
-  }
-];
-
 const revenueData = [
   { month: 'Yan', value: 4500 },
   { month: 'Fev', value: 5200 },
@@ -96,6 +57,49 @@ const revenueData = [
 ];
 
 export default function DashboardPage() {
+  const [quickStats, setQuickStats] = useState<QuickStatsResponse['data'] | null>(null);
+  const [statistics, setStatistics] = useState<DashboardStatisticsResponse['data'] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true);
+      try {
+        const [quickRes, statsRes] = await Promise.all([
+          apiClient.get<QuickStatsResponse>('/dashboard/quick-stats/'),
+          apiClient.get<DashboardStatisticsResponse>('/dashboard/statistics/'),
+        ]);
+
+        if (quickRes && quickRes.success && quickRes.data) {
+          setQuickStats(quickRes.data);
+        } else {
+          setQuickStats(null);
+        }
+
+        if (statsRes && statsRes.success && statsRes.data) {
+          setStatistics(statsRes.data);
+        } else {
+          setStatistics(null);
+        }
+      } catch {
+        setQuickStats(null);
+        setStatistics(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const resourceMeta = [
+    { key: 'reading', title: 'READING TESTLAR SONI', icon: BookOpen, color: 'purple' },
+    { key: 'listening', title: 'LISTENING TESTLAR SONI', icon: Headphones, color: 'indigo' },
+    { key: 'writing', title: 'WRITING TESTLAR SONI', icon: PenTool, color: 'orange' },
+    { key: 'articles', title: 'MAQOLALAR SONI', icon: FileText, color: 'pink' },
+    { key: 'materials', title: 'MATERIALLAR SONI', icon: FileStack, color: 'blue' },
+    { key: 'vocabulary', title: 'VOCABULARY SONI', icon: BookMarked, color: 'green' },
+  ] as const;
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
@@ -144,27 +148,163 @@ export default function DashboardPage() {
           <h2>O'quv Resurslari</h2>
         </div>
         <div className="stats-grid resources-stats">
-          {resourceStats.map((stat) => {
-            const Icon = stat.icon;
+          {loading && (
+            <Card className="stat-card border-blue">
+              <CardHeader className="stat-card-header">
+                <div>
+                  <div className="stat-title">Ma'lumotlar yuklanmoqda</div>
+                  <div className="stat-main-value">...</div>
+                </div>
+              </CardHeader>
+            </Card>
+          )}
+          {!loading && quickStats && resourceMeta.map((meta) => {
+            const Icon = meta.icon;
+            const total = quickStats.total_items[meta.key as keyof typeof quickStats.total_items] ?? 0;
+            const active = quickStats.active_items[meta.key as keyof typeof quickStats.active_items] ?? 0;
+            const today = quickStats.recent_count.today[meta.key as keyof typeof quickStats.recent_count.today] ?? 0;
             return (
-              <Card key={stat.title} className={`stat-card border-${stat.color}`}>
+              <Card key={meta.key} className={`stat-card border-${meta.color}`}>
                 <CardHeader className="stat-card-header">
                   <div>
-                    <div className="stat-title">{stat.title}</div>
-                    <div className="stat-main-value">{stat.value}</div>
-                    <div className={`stat-change ${stat.trend}`}>
-                      {stat.trend === 'up' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                      {stat.change}
-                      <span className="stat-period">o'tgan oyga nisbatan</span>
+                    <div className="stat-title">{meta.title}</div>
+                    <div className="stat-main-value">{total}</div>
+                    <div className={`stat-change up`}>
+                      <ArrowUpRight size={16} />
+                      Active: {active}
+                      <span className="stat-period"> • Bugun: {today}</span>
                     </div>
                   </div>
-                  <div className={`stat-icon-wrapper bg-${stat.color}`}>
-                    <Icon className={`stat-icon text-${stat.color}`} />
+                  <div className={`stat-icon-wrapper bg-${meta.color}`}>
+                    <Icon className={`stat-icon text-${meta.color}`} />
                   </div>
                 </CardHeader>
               </Card>
             );
           })}
+          {!loading && !quickStats && (
+            <Card className="stat-card border-orange">
+              <CardHeader className="stat-card-header">
+                <div>
+                  <div className="stat-title">Ma'lumotlar topilmadi</div>
+                  <div className="stat-main-value">0</div>
+                  <div className={`stat-change up`}>
+                    <ArrowUpRight size={16} />
+                    Active: 0
+                    <span className="stat-period"> • Bugun: 0</span>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      <div className="section-container">
+        <div className="section-title">
+          <LayoutGrid size={20} />
+          <h2>Qiyinchilik va So‘nggi Qo‘shilganlar</h2>
+        </div>
+        <div className="stats-grid resources-stats">
+          {statistics && (
+            <>
+              <Card className="stat-card border-green">
+                <CardHeader className="stat-card-header">
+                  <div>
+                    <div className="stat-title">Oxirgi 7 kunda qo'shilganlar</div>
+                    <div className="stat-main-value">
+                      {statistics.recent_additions.last_7_days.listening_tests +
+                        statistics.recent_additions.last_7_days.reading_passages +
+                        statistics.recent_additions.last_7_days.writing_tasks +
+                        statistics.recent_additions.last_7_days.smart_articles +
+                        statistics.recent_additions.last_7_days.listening_materials +
+                        statistics.recent_additions.last_7_days.vocabulary_words}
+                    </div>
+                    <div className="stat-change up">
+                      <ArrowUpRight size={16} />
+                      Listening: {statistics.recent_additions.last_7_days.listening_tests} • Reading: {statistics.recent_additions.last_7_days.reading_passages}
+                      <span className="stat-period">
+                        {' '}• Writing: {statistics.recent_additions.last_7_days.writing_tasks} • Articles: {statistics.recent_additions.last_7_days.smart_articles}
+                      </span>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <Card className="stat-card border-purple">
+                <CardHeader className="stat-card-header">
+                  <div>
+                    <div className="stat-title">Qiyinchilik bo‘yicha taqsimot (Listening)</div>
+                    <div className="stat-main-value">
+                      {statistics.difficulty_distribution.listening_tests.reduce((sum, item) => sum + item.count, 0)}
+                    </div>
+                    <div className="stat-change up">
+                      <ArrowUpRight size={16} />
+                      {statistics.difficulty_distribution.listening_tests.map((item) => (
+                        <span key={item.difficulty} className="stat-period">
+                          {item.difficulty}: {item.count}{' '}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <Card className="stat-card border-indigo">
+                <CardHeader className="stat-card-header">
+                  <div>
+                    <div className="stat-title">Qiyinchilik bo‘yicha taqsimot (Reading)</div>
+                    <div className="stat-main-value">
+                      {statistics.difficulty_distribution.reading_passages.reduce((sum, item) => sum + item.count, 0)}
+                    </div>
+                    <div className="stat-change up">
+                      <ArrowUpRight size={16} />
+                      {statistics.difficulty_distribution.reading_passages.map((item) => (
+                        <span key={item.difficulty} className="stat-period">
+                          {item.difficulty}: {item.count}{' '}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <Card className="stat-card border-blue">
+                <CardHeader className="stat-card-header">
+                  <div>
+                    <div className="stat-title">Maqolalar bo‘yicha darajalar</div>
+                    <div className="stat-main-value">
+                      {statistics.articles_by_level.reduce((sum, item) => sum + item.count, 0)}
+                    </div>
+                    <div className="stat-change up">
+                      <ArrowUpRight size={16} />
+                      {statistics.articles_by_level.map((item) => (
+                        <span key={item.level} className="stat-period">
+                          {item.level}: {item.count}{' '}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <Card className="stat-card border-orange">
+                <CardHeader className="stat-card-header">
+                  <div>
+                    <div className="stat-title">Tizim holati</div>
+                    <div className="stat-main-value">{statistics.system_info.total_modules}</div>
+                    <div className="stat-change up">
+                      <ArrowUpRight size={16} />
+                      Modullar soni
+                      <span className="stat-period">
+                        {' '}• Yangilangan vaqti: {new Date(statistics.system_info.last_updated).toLocaleString('uz-UZ')}
+                      </span>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            </>
+          )}
         </div>
       </div>
 

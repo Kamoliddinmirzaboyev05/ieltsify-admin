@@ -37,6 +37,7 @@ export interface ListeningTestCreate {
 
 export interface ReadingTest {
   id: number;
+  slug: string;
   title: string;
   html_content: string;
   cover_image: string | null;
@@ -75,6 +76,87 @@ export interface PodcastMaterial {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface QuickStatsResponse {
+  success: boolean;
+  data: {
+    total_items: {
+      listening: number;
+      reading: number;
+      writing: number;
+      articles: number;
+      materials: number;
+      vocabulary: number;
+    };
+    active_items: {
+      listening: number;
+      reading: number;
+      writing: number;
+      materials: number;
+      articles?: number;
+      vocabulary?: number;
+    };
+    recent_count: {
+      today: {
+        listening: number;
+        reading: number;
+        writing: number;
+        articles: number;
+        materials?: number;
+        vocabulary?: number;
+      };
+    };
+  };
+}
+
+export interface DashboardStatisticsResponse {
+  success: boolean;
+  data: {
+    overview: {
+      total_listening_tests: number;
+      total_reading_passages: number;
+      total_writing_tasks: number;
+      total_smart_articles: number;
+      total_listening_materials: number;
+      total_vocabulary_words: number;
+    };
+    active_items: {
+      active_listening_tests: number;
+      active_reading_passages: number;
+      active_writing_tasks: number;
+      active_listening_materials: number;
+    };
+    difficulty_distribution: {
+      listening_tests: { difficulty: string; count: number }[];
+      reading_passages: { difficulty: string; count: number }[];
+      writing_tasks: { difficulty: string; count: number }[];
+      listening_materials: { difficulty: string; count: number }[];
+    };
+    articles_by_level: {
+      level: string;
+      count: number;
+    }[];
+    recent_additions: {
+      last_7_days: {
+        listening_tests: number;
+        reading_passages: number;
+        writing_tasks: number;
+        smart_articles: number;
+        listening_materials: number;
+        vocabulary_words: number;
+      };
+    };
+    user_statistics: {
+      total_vocabulary_words: number;
+      public_vocabulary_words: number;
+      private_vocabulary_words: number;
+    };
+    system_info: {
+      total_modules: number;
+      last_updated: string;
+    };
+  };
 }
 
 export interface WritingTask {

@@ -103,14 +103,14 @@ export default function ReadingPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (slug: string) => {
     if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) {
       return;
     }
 
     try {
-      await apiClient.delete(`/reading-passages/${id}/`);
-      setPassages(passages.filter(p => p.id !== id));
+      await apiClient.delete(`/reading-passages/${encodeURIComponent(slug)}/`);
+      setPassages(prev => prev.filter(p => p.slug !== slug));
       toast.success('Passage o\'chirildi!');
     } catch (err) {
       console.error('Delete failed:', err);
@@ -247,7 +247,7 @@ export default function ReadingPage() {
                   variant="ghost" 
                   size="icon"
                   className="delete-button"
-                  onClick={() => handleDelete(passage.id)}
+                  onClick={() => handleDelete(passage.slug)}
                 >
                   <Trash2 size={20} />
                 </Button>

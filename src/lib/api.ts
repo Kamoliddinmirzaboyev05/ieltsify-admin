@@ -93,6 +93,16 @@ class ApiClient {
             });
             
             if (retryResponse.ok) {
+              const retryContentType = retryResponse.headers.get('content-type') || '';
+              const retryMethod = options.method ? String(options.method).toUpperCase() : 'GET';
+              if (
+                retryResponse.status === 204 ||
+                retryResponse.status === 205 ||
+                retryMethod === 'DELETE' ||
+                !retryContentType.includes('application/json')
+              ) {
+                return undefined as T;
+              }
               return await retryResponse.json();
             }
             // If retry also fails, fall through to error handling
@@ -138,6 +148,16 @@ class ApiClient {
         throw new Error(errorMessage);
       }
 
+      const contentType = response.headers.get('content-type') || '';
+      const method = options.method ? String(options.method).toUpperCase() : 'GET';
+      if (
+        response.status === 204 ||
+        response.status === 205 ||
+        method === 'DELETE' ||
+        !contentType.includes('application/json')
+      ) {
+        return undefined as T;
+      }
       return await response.json();
     } catch (error) {
       if (error instanceof Error) {
