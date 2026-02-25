@@ -6,6 +6,7 @@ import { Plus, Upload, Trash2, Headphones, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import type { ListeningTest, PaginatedResponse } from '@/types';
 import { toast } from 'sonner';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import './ListeningPage.css';
 
 export default function ListeningPage() {
@@ -19,6 +20,11 @@ export default function ListeningPage() {
   const [description, setDescription] = useState('');
   const [htmlFile, setHtmlFile] = useState<File | null>(null);
   const [coverImage, setCoverImage] = useState<File | null>(null);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch tests on mount
   useEffect(() => {
@@ -104,19 +110,33 @@ export default function ListeningPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) {
-      return;
-    }
+  const handleDeleteClick = (test: ListeningTest) => {
+    setDeleteTarget({ id: test.id, title: test.title });
+    setDeleteModalOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    setDeleting(true);
     try {
-      await apiClient.delete(`/listening-tests/${id}/`);
-      setTests(tests.filter(t => t.id !== id));
-      toast.success('Test o\'chirildi!');
+      await apiClient.delete(`/listening-tests/${deleteTarget.id}/`);
+      setTests(tests.filter(t => t.id !== deleteTarget.id));
+      toast.success('Test muvaffaqiyatli o\'chirildi!');
+      setDeleteModalOpen(false);
     } catch (err) {
       console.error('Delete failed:', err);
       toast.error('O\'chirishda xatolik yuz berdi!');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
+  };
+
+  const closeDeleteModal = () => {
+    if (deleting) return;
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
   };
 
   return (
@@ -249,7 +269,7 @@ export default function ListeningPage() {
                 <Button
                   variant="destructive"
                   size="icon"
-                  onClick={() => handleDelete(test.id)}
+                  onClick={() => handleDeleteClick(test)}
                   className="delete-button"
                 >
                   <Trash2 />
@@ -259,6 +279,18 @@ export default function ListeningPage() {
           </div>
         )}
       </Card>
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Testni o'chirish"
+        description={`"${deleteTarget?.title}" ni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.`}
+        confirmText={deleting ? 'O\'chirilmoqda...' : 'O\'chirish'}
+        cancelText="Bekor qilish"
+        variant="danger"
+        isLoading={deleting}
+      />
     </div>
   );
 }
