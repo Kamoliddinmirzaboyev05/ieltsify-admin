@@ -6,6 +6,7 @@ import { Plus, Upload, Trash2, BookOpen, Loader2, FileText, Image as ImageIcon }
 import { apiClient } from '@/lib/api';
 import type { ReadingTest, PaginatedResponse } from '@/types';
 import { toast } from 'sonner';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import './ReadingPage.css';
 
 export default function ReadingPage() {
@@ -18,6 +19,12 @@ export default function ReadingPage() {
   const [title, setTitle] = useState('');
   const [htmlFile, setHtmlFile] = useState<File | null>(null);
   const [coverImage, setCoverImage] = useState<File | null>(null);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch passages on mount
   useEffect(() => {
@@ -103,19 +110,35 @@ export default function ReadingPage() {
     }
   };
 
-  const handleDelete = async (slug: string) => {
-    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) {
-      return;
-    }
+  const handleDeleteClick = (passage: ReadingTest) => {
+    setDeleteTarget({ id: passage.id, title: passage.title });
+    setDeletingId(passage.id);
+    setDeleteModalOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    setDeleting(true);
     try {
-      await apiClient.delete(`/reading-passages/${encodeURIComponent(slug)}/`);
-      setPassages(prev => prev.filter(p => p.slug !== slug));
-      toast.success('Passage o\'chirildi!');
+      await apiClient.delete(`/reading-passages/${deleteTarget.id}/`);
+      setPassages(prev => prev.filter(p => p.id !== deleteTarget.id));
+      toast.success('Reading passage muvaffaqiyatli o\'chirildi!');
+      setDeleteModalOpen(false);
     } catch (err) {
       console.error('Delete failed:', err);
       toast.error('O\'chirishda xatolik yuz berdi!');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+      setDeletingId(null);
     }
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
+    setDeletingId(null);
   };
 
   return (
@@ -247,15 +270,32 @@ export default function ReadingPage() {
                   variant="ghost" 
                   size="icon"
                   className="delete-button"
-                  onClick={() => handleDelete(passage.slug)}
+                  onClick={() => handleDeleteClick(passage)}
+                  disabled={deletingId === passage.id}
                 >
-                  <Trash2 size={20} />
+                  {deletingId === passage.id ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={20} />
+                  )}
                 </Button>
               </Card>
             ))}
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Reading Passage o'chirish"
+        description={`"${deleteTarget?.title}" nomli reading passageni rostdan ham o'chirmoqchimisiz? Bu amaliyotni ortga qaytarib bo'lmaydi.`}
+        confirmText="O'chirish"
+        cancelText="Bekor qilish"
+        variant="danger"
+        isLoading={deleting}
+      />
     </div>
   );
 }

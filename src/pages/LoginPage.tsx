@@ -47,9 +47,7 @@ export default function LoginPage() {
       <div className="login-container">
         <div className="login-left">
           <div className="login-brand">
-            <div className="login-brand-icon">
-              <GraduationCap className="brand-icon" />
-            </div>
+            <img src="/ieltsifylogo.png" alt="IELTSIFY" className="login-brand-logo" />
             <h1 className="login-brand-title">IELTSIFY</h1>
             <p className="login-brand-subtitle">Admin Panel</p>
           </div>

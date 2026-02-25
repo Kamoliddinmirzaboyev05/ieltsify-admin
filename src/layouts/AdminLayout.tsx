@@ -45,8 +45,7 @@ export default function AdminLayout() {
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${!mobileOpen ? 'mobile-hidden' : ''}`}>
         <div className="sidebar-logo">
           <div className="sidebar-logo-content">
-            <div className="sidebar-logo-icon">I</div>
-            {!collapsed && <span className="sidebar-logo-text">IELTSIFY</span>}
+            <img src="/ieltsifylogo.png" alt="IELTSIFY" className="sidebar-logo-img" />
           </div>
         </div>
 
