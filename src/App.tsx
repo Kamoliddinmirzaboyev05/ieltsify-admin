@@ -3,6 +3,9 @@ import { Toaster } from 'sonner';
 import { AnimatePresence } from 'framer-motion';
 import AdminLayout from './layouts/AdminLayout';
 import DashboardPage from './pages/DashboardPage';
+import UsersPage from './pages/UsersPage';
+import PaymentRequestsPage from './pages/PaymentRequestsPage';
+import SystemLogsPage from './pages/SystemLogsPage';
 import ListeningPage from './pages/ListeningPage';
 import ReadingPage from './pages/ReadingPage';
 import ResourcesPage from './pages/ResourcesPage';
@@ -43,6 +46,21 @@ const AnimatedRoutes = () => {
           <Route index element={
             <PageTransition>
               <DashboardPage />
+            </PageTransition>
+          } />
+          <Route path="payments" element={
+            <PageTransition>
+              <PaymentRequestsPage />
+            </PageTransition>
+          } />
+          <Route path="system-logs" element={
+            <PageTransition>
+              <SystemLogsPage />
+            </PageTransition>
+          } />
+          <Route path="users" element={
+            <PageTransition>
+              <UsersPage />
             </PageTransition>
           } />
           <Route path="reading" element={

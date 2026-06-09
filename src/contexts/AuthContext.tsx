@@ -1,49 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api';
-import { AuthContext } from '@/contexts/AuthContextBase';
-import type { User } from '@/contexts/AuthContextBase';
+import React, { useState } from "react";
+import { apiClient } from "@/lib/api";
+import { AuthContext } from "@/contexts/AuthContextBase";
+import type { User } from "@/contexts/AuthContextBase";
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(() => {
-    const saved = sessionStorage.getItem('user');
+    const saved = sessionStorage.getItem("user");
     return saved ? JSON.parse(saved) : null;
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const tokenExists = apiClient.isAuthenticated();
-    if (!tokenExists && user) {
-      // If no token but we have a user, it's an invalid state. Logout.
-      setUser(null);
-      sessionStorage.removeItem('user');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      sessionStorage.setItem('user', JSON.stringify(user));
-    } else {
-      sessionStorage.removeItem('user');
-    }
-  }, [user]);
-
-  const login = async (username: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Call API to get tokens
-      await apiClient.login(username, password);
-      
-      // Create user object from username
+      const data = await apiClient.login(email, password);
+
+      // Role tekshirish - faqat admin kirishi mumkin
+      if (data.role !== "admin") {
+        apiClient.logout();
+        throw new Error("Siz admin emassiz. Kirish taqiqlangan.");
+      }
+
+      // Profilni olish
+      const profileResponse = await apiClient.get<any>("/accounts/profile/");
+      const profileData = profileResponse?.data || profileResponse;
+
+      const userInfo = profileData?.user_info || profileData;
+
       const newUser: User = {
-        id: Date.now().toString(),
-        name: username.charAt(0).toUpperCase() + username.slice(1),
-        email: `${username}@ieltsify.com`,
-        username: username,
+        id: userInfo?.id?.toString() || "1",
+        name:
+          [userInfo?.first_name, userInfo?.last_name]
+            .filter(Boolean)
+            .join(" ") || email.split("@")[0],
+        email: userInfo?.email || email,
+        username: userInfo?.username || email.split("@")[0],
+        role: data.role || "admin",
       };
-      
+
       setUser(newUser);
+      sessionStorage.setItem("user", JSON.stringify(newUser));
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -51,12 +51,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    apiClient.logout();
     setUser(null);
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
   };
 
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user && apiClient.isAuthenticated(), isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        isAuthenticated: !!user && apiClient.isAuthenticated(),
+        isAdmin,
+        isLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -177,3 +177,151 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+
+// =====================================================
+// ADMIN PANEL NEW TYPES
+// =====================================================
+
+export interface AdminDashboardOverview {
+  total_users: number;
+  active_subscriptions: number;
+  total_coins_distributed: number;
+  total_coins_in_circulation: number;
+  pending_payments: number;
+  today_active_users: number;
+}
+
+export interface AdminDashboardSubscriptions {
+  total: number;
+  active: number;
+  plan_distribution: Record<string, number>;
+}
+
+export interface AdminDashboardPayments {
+  total_approved_amount: number;
+  total_pending_amount: number;
+  pending_count: number;
+}
+
+export interface AdminDashboardResponse {
+  success: boolean;
+  data: {
+    overview: AdminDashboardOverview;
+    subscriptions: AdminDashboardSubscriptions;
+    payments: AdminDashboardPayments;
+  };
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  role: 'user' | 'admin' | 'super_admin';
+  full_name?: string;
+  avatar_url?: string;
+  current_band?: number;
+  target_band?: number;
+  target_score?: number;
+  target_date?: string;
+  bio?: string;
+  is_vip?: boolean;
+  vip_expires_at?: string;
+  weak_skills?: string[];
+  is_active: boolean;
+  last_active_at?: string;
+  created_at: string;
+  user_coins?: UserCoinWallet;
+  user_subscriptions?: UserSubscription[];
+}
+
+export interface UserCoinWallet {
+  id: string;
+  user_id: string;
+  balance: number;
+  total_earned: number;
+  total_spent: number;
+}
+
+export interface UserSubscription {
+  id: string;
+  user_id: string;
+  plan_type: 'monthly' | 'quarterly' | 'yearly' | 'lifetime' | 'trial';
+  status: 'active' | 'paused' | 'cancelled' | 'expired';
+  started_at: string;
+  expires_at?: string;
+  cancelled_at?: string;
+  auto_renew: boolean;
+  price: number;
+}
+
+export interface PaymentRequest {
+  id: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  payment_type: 'coin_purchase' | 'subscription' | 'other';
+  plan_type?: string;
+  coins_requested?: number;
+  receipt_image_url?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_id?: string;
+  admin_note?: string;
+  processed_at?: string;
+  created_at: string;
+  profiles?: {
+    email: string;
+    full_name: string;
+  };
+}
+
+export interface AdminLog {
+  id: string;
+  admin_id: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  metadata: Record<string, any>;
+  created_at: string;
+  profiles?: {
+    email: string;
+    full_name: string;
+  };
+}
+
+export interface CoinTransaction {
+  id: string;
+  user_id: string;
+  amount: number;
+  transaction_type: string;
+  description?: string;
+  reference_id?: string;
+  admin_id?: string;
+  created_at: string;
+  profiles?: {
+    email: string;
+    full_name: string;
+  };
+}
+
+export interface ReferralStats {
+  referrer_id: string;
+  count: number;
+  users?: {
+    email: string;
+    full_name: string;
+  };
+}
+
+export interface EdgeFunctionResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
+}

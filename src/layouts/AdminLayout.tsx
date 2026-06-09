@@ -5,6 +5,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
+  Users,
   BookOpen,
   Headphones,
   FileStack,
@@ -20,9 +21,12 @@ import './AdminLayout.css';
 
 const menuItems = [
   { key: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { key: '/users', icon: Users, label: 'Foydalanuvchilar' },
+  { key: '/payments', icon: FileStack, label: 'To\'lov So\'rovlari' },
   { key: '/reading', icon: BookOpen, label: 'Reading' },
   { key: '/listening', icon: Headphones, label: 'Listening' },
   { key: '/resources', icon: FileStack, label: 'Resource Manager' },
+  { key: '/system-logs', icon: LayoutDashboard, label: 'Tizim Loglari' },
   { key: '/profile', icon: User, label: 'Profile' },
 ];
 

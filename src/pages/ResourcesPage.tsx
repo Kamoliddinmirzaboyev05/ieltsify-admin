@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, FileStack, FileText, Headphones, PenTool, BookMarked, Loader2, Upload } from 'lucide-react';import { apiClient } from '@/lib/api';
-import type { SmartArticle, PodcastMaterial, PaginatedResponse, WritingTask } from '@/types';
+import type { SmartArticle, PodcastMaterial, WritingTask } from '@/types';
 import { toast } from 'sonner';
 import './ResourcesPage.css';
 
@@ -43,14 +43,8 @@ export default function ResourcesPage() {
   const fetchArticles = async () => {
     setFetchLoading(true);
     try {
-      const data = await apiClient.get<PaginatedResponse<SmartArticle>>('/smart-articles/');
-      if (data && data.results && Array.isArray(data.results)) {
-        setArticles(data.results);
-      } else if (Array.isArray(data)) {
-        setArticles(data as unknown as SmartArticle[]);
-      } else {
-        setArticles([]);
-      }
+      const data = await apiClient.get<SmartArticle[]>('/smart-articles/');
+      setArticles(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch articles:', error);
       toast.error('Articlelarni yuklashda xatolik yuz berdi');
@@ -128,14 +122,8 @@ export default function ResourcesPage() {
   const fetchPodcasts = async () => {
     setFetchLoading(true);
     try {
-      const data = await apiClient.get<PaginatedResponse<PodcastMaterial>>('/listening-materials/');
-      if (data && data.results && Array.isArray(data.results)) {
-        setPodcastMaterials(data.results);
-      } else if (Array.isArray(data)) {
-        setPodcastMaterials(data as unknown as PodcastMaterial[]);
-      } else {
-        setPodcastMaterials([]);
-      }
+      const data = await apiClient.get<PodcastMaterial[]>('/listening-materials/');
+      setPodcastMaterials(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch podcasts:', error);
       toast.error('Podcastlarni yuklashda xatolik yuz berdi');
@@ -157,14 +145,8 @@ export default function ResourcesPage() {
   const fetchWritingTasks = async () => {
     setFetchLoading(true);
     try {
-      const data = await apiClient.get<PaginatedResponse<WritingTask>>('/writing-tasks/');
-      if (data && data.results && Array.isArray(data.results)) {
-        setWritingTasks(data.results);
-      } else if (Array.isArray(data)) {
-        setWritingTasks(data as unknown as WritingTask[]);
-      } else {
-        setWritingTasks([]);
-      }
+      const data = await apiClient.get<WritingTask[]>('/writing-tasks/');
+      setWritingTasks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch writing tasks:', error);
       toast.error('Writing tasklarni yuklashda xatolik yuz berdi');
@@ -270,20 +252,62 @@ export default function ResourcesPage() {
     }
   };
 
+  // Fetch vocabulary when tab is active
+  useEffect(() => {
+    if (activeTab === 'vocabulary') {
+      fetchVocabulary();
+    }
+  }, [activeTab]);
+
+  const fetchVocabulary = async () => {
+    setFetchLoading(true);
+    try {
+      const data = await apiClient.get<VocabularyItem[]>('/vocabulary/');
+      setVocabularyItems(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch vocabulary:', error);
+      toast.error('Vocabularyni yuklashda xatolik yuz berdi');
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
   // Vocabulary handlers
-  const handleVocabularySubmit = () => {
+  const handleVocabularySubmit = async () => {
     if (!vocabularyForm.word.trim() || !vocabularyForm.definition.trim()) {
-      alert('So\'z va ta\'rifni kiriting!');
+      toast.error('So\'z va ta\'rifni kiriting!');
       return;
     }
-    const newItem: VocabularyItem = {
-      id: Date.now().toString(),
-      ...vocabularyForm,
-      uploadDate: new Date().toLocaleDateString('uz-UZ'),
-    };
-    setVocabularyItems([...vocabularyItems, newItem]);
-    setVocabularyForm({ word: '', definition: '', example: '', level: 'Intermediate' });
-    setShowVocabularyForm(false);
+
+    setSubmitLoading(true);
+    try {
+      const newItem = await apiClient.post<VocabularyItem>('/vocabulary/', {
+        ...vocabularyForm,
+        added_date: new Date().toISOString(),
+      });
+      setVocabularyItems([newItem, ...vocabularyItems]);
+      setVocabularyForm({ word: '', definition: '', example: '', level: 'Intermediate' });
+      setShowVocabularyForm(false);
+      toast.success('So\'z muvaffaqiyatli qo\'shildi!');
+    } catch (error) {
+      console.error('Failed to create vocabulary:', error);
+      toast.error('So\'z qo\'shishda xatolik yuz berdi');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const handleDeleteVocabulary = async (id: string) => {
+    if (!confirm('Rostdan ham o\'chirmoqchimisiz?')) return;
+
+    try {
+      await apiClient.delete(`/vocabulary/${id}/`);
+      setVocabularyItems(vocabularyItems.filter(v => v.id !== id));
+      toast.success('So\'z o\'chirildi');
+    } catch (error) {
+      console.error('Failed to delete vocabulary:', error);
+      toast.error('O\'chirishda xatolik yuz berdi');
+    }
   };
 
   const tabs = [
@@ -753,7 +777,7 @@ export default function ResourcesPage() {
                     <Button
                       variant="destructive"
                       size="icon"
-                      onClick={() => setVocabularyItems(vocabularyItems.filter(v => v.id !== item.id))}
+                      onClick={() => handleDeleteVocabulary(item.id)}
                     >
                       <Trash2 />
                     </Button>
