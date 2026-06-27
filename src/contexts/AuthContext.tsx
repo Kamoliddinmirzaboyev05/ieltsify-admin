@@ -3,6 +3,17 @@ import { apiClient } from "@/lib/api";
 import { AuthContext } from "@/contexts/AuthContextBase";
 import type { User } from "@/contexts/AuthContextBase";
 
+/** Loose shape of /accounts/profile/ — fields nest inconsistently. */
+interface ProfileInfo {
+  id?: number | string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  username?: string;
+  user_info?: ProfileInfo;
+  data?: ProfileInfo;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -24,7 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Profilni olish
-      const profileResponse = await apiClient.get<any>("/accounts/profile/");
+      const profileResponse =
+        await apiClient.get<ProfileInfo>("/accounts/profile/");
       const profileData = profileResponse?.data || profileResponse;
 
       const userInfo = profileData?.user_info || profileData;

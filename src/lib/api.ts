@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL || "https://ieltsify-backend.onrender.com";
 
 // API Response Types
 export interface LoginResponse {
@@ -150,7 +150,7 @@ class ApiClient {
   }
 
   // Generic POST request
-  async post<T>(endpoint: string, data: any): Promise<T> {
+  async post<T>(endpoint: string, data: unknown): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     const response = await this.authenticatedFetch(url, {
       method: "POST",
@@ -169,7 +169,7 @@ class ApiClient {
   }
 
   // Generic PUT request
-  async put<T>(endpoint: string, data: any): Promise<T> {
+  async put<T>(endpoint: string, data: unknown): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     const response = await this.authenticatedFetch(url, {
       method: "PUT",
@@ -188,7 +188,7 @@ class ApiClient {
   }
 
   // Generic PATCH request
-  async patch<T>(endpoint: string, data: any): Promise<T> {
+  async patch<T>(endpoint: string, data: unknown): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     const response = await this.authenticatedFetch(url, {
       method: "PATCH",

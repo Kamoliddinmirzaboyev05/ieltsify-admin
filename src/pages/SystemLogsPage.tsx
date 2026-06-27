@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { adminLogsApi, adminReferralsApi } from '@/lib/admin-api';
@@ -31,13 +31,7 @@ export default function SystemLogsPage() {
   const [referrals, setReferrals] = useState<ReferralStats[]>([]);
   const [refLoading, setRefLoading] = useState(false);
 
-  useEffect(() => {
-    if (activeTab === 'admin-logs') fetchAdminLogs();
-    else if (activeTab === 'coin-transactions') fetchCoinTransactions();
-    else if (activeTab === 'referrals') fetchTopReferrers();
-  }, [activeTab, logsPage, txPage]);
-
-  const fetchAdminLogs = async () => {
+  const fetchAdminLogs = useCallback(async () => {
     try {
       setLogsLoading(true);
       const response = await adminLogsApi.getAdminLogs({ page: logsPage, limit: 30 });
@@ -45,14 +39,14 @@ export default function SystemLogsPage() {
         setAdminLogs(response.data || []);
         if (response.pagination) setLogsTotalPages(response.pagination.total_pages);
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Loglarni yuklashda xatolik');
     } finally {
       setLogsLoading(false);
     }
-  };
+  }, [logsPage]);
 
-  const fetchCoinTransactions = async () => {
+  const fetchCoinTransactions = useCallback(async () => {
     try {
       setTxLoading(true);
       const response = await adminLogsApi.getCoinTransactions({ page: txPage, limit: 30 });
@@ -60,26 +54,32 @@ export default function SystemLogsPage() {
         setTransactions(response.data || []);
         if (response.pagination) setTxTotalPages(response.pagination.total_pages);
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Transaksiyalarni yuklashda xatolik');
     } finally {
       setTxLoading(false);
     }
-  };
+  }, [txPage]);
 
-  const fetchTopReferrers = async () => {
+  const fetchTopReferrers = useCallback(async () => {
     try {
       setRefLoading(true);
       const response = await adminReferralsApi.getTopReferrers();
       if (response.success) {
         setReferrals(response.data || []);
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Referallarni yuklashda xatolik');
     } finally {
       setRefLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'admin-logs') fetchAdminLogs();
+    else if (activeTab === 'coin-transactions') fetchCoinTransactions();
+    else if (activeTab === 'referrals') fetchTopReferrers();
+  }, [activeTab, fetchAdminLogs, fetchCoinTransactions, fetchTopReferrers]);
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('uz-UZ', {

@@ -282,7 +282,7 @@ export interface AdminLog {
   action: string;
   target_type: string;
   target_id: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
   profiles?: {
     email: string;
@@ -324,4 +324,23 @@ export interface EdgeFunctionResponse<T> {
     limit: number;
     total_pages: number;
   };
+}
+
+/** Raw envelope returned by the Django backend before mapping. */
+export interface RawApiResponse<T = unknown> {
+  success: boolean;
+  data: T;
+  error?: string;
+  pagination?: EdgeFunctionResponse<unknown>["pagination"];
+  counts?: Record<string, number>;
+}
+
+/** Narrows an unknown thrown value to a user-facing message. */
+export function getErrorMessage(
+  err: unknown,
+  fallback = "Xatolik yuz berdi",
+): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  return fallback;
 }

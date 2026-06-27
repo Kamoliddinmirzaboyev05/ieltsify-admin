@@ -1,37 +1,45 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { adminDashboardApi } from '@/lib/admin-api';
+import { getErrorMessage } from '@/types';
 import type { AdminDashboardOverview } from '@/types';
-import { 
+import {
   Users, Crown, DollarSign, Clock, Activity,
-  TrendingUp, ArrowUpRight, LayoutGrid, 
+  TrendingUp, ArrowUpRight, LayoutGrid, AlertCircle, RefreshCw,
   BookOpen, Headphones, PenTool, FileText, BookMarked
 } from 'lucide-react';
 import { toast } from 'sonner';
 import './DashboardPage.css';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState<AdminDashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await adminDashboardApi.getStats();
       if (response.success && response.data) {
         setOverview(response.data.overview);
+      } else {
+        setError(response.error || 'Dashboard ma\'lumotlarini yuklashda xatolik');
       }
-    } catch (err: any) {
-      toast.error('Dashboard ma\'lumotlarini yuklashda xatolik');
-      console.error(err);
+    } catch (err) {
+      const message = getErrorMessage(err, 'Dashboard ma\'lumotlarini yuklashda xatolik');
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, [fetchDashboardStats]);
 
   const mainStats = [
     {
@@ -97,6 +105,21 @@ export default function DashboardPage() {
               </CardHeader>
             </Card>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !overview) {
+    return (
+      <div className="dashboard">
+        <div className="page-error-state">
+          <AlertCircle size={40} />
+          <h2>Ma'lumotlarni yuklab bo'lmadi</h2>
+          <p>{error}</p>
+          <button className="retry-btn" onClick={fetchDashboardStats}>
+            <RefreshCw size={16} /> Qayta urinish
+          </button>
         </div>
       </div>
     );
@@ -225,15 +248,15 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="quick-actions">
-              <button className="quick-action-btn" onClick={() => window.location.href = '/payments'}>
+              <button className="quick-action-btn" onClick={() => navigate('/payments')}>
                 <Clock size={20} />
                 <span>To'lovlarni tekshirish</span>
               </button>
-              <button className="quick-action-btn" onClick={() => window.location.href = '/users'}>
+              <button className="quick-action-btn" onClick={() => navigate('/users')}>
                 <Users size={20} />
                 <span>Foydalanuvchilar</span>
               </button>
-              <button className="quick-action-btn" onClick={() => window.location.href = '/system-logs'}>
+              <button className="quick-action-btn" onClick={() => navigate('/system-logs')}>
                 <Activity size={20} />
                 <span>Tizim loglari</span>
               </button>

@@ -1,12 +1,35 @@
 import { apiClient } from "./api";
+import { getErrorMessage } from "@/types";
 import type {
   AdminDashboardResponse,
   UserProfile,
   PaymentRequest,
   AdminLog,
   CoinTransaction,
+  ReferralStats,
   EdgeFunctionResponse,
+  RawApiResponse,
 } from "@/types";
+
+/** Loose shape of the Django /admin-dashboard/ payload (pre-mapping). */
+interface DjangoDashboardRaw {
+  overview?: { total_users?: number };
+  subscription_statistics?: {
+    total_subscriptions?: number;
+    active_subscriptions?: number;
+    subscriptions_by_plan?: Record<string, number>;
+  };
+  coin_statistics?: {
+    total_coins_distributed?: number;
+    total_wallet_balance?: number;
+  };
+  financial_statistics?: {
+    total_payments?: number;
+    successful_payments?: number;
+    total_revenue?: number;
+  };
+  usage_statistics?: { active_users_today?: number };
+}
 
 // =====================================================
 // DASHBOARD - Django admin-dashboard endpoint
@@ -16,7 +39,9 @@ export const adminDashboardApi = {
     EdgeFunctionResponse<AdminDashboardResponse["data"]>
   > => {
     try {
-      const data = await apiClient.get<any>("/admin-dashboard/");
+      const data = await apiClient.get<RawApiResponse<DjangoDashboardRaw>>(
+        "/admin-dashboard/",
+      );
       if (data.success) {
         // Map Django response to admin panel format
         const d = data.data;
@@ -48,9 +73,17 @@ export const adminDashboardApi = {
         };
         return { success: true, data: mappedData };
       }
-      return { success: false, data: {} as any, error: data.error };
-    } catch (err: any) {
-      return { success: false, data: {} as any, error: err.message };
+      return {
+        success: false,
+        data: {} as AdminDashboardResponse["data"],
+        error: data.error,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        data: {} as AdminDashboardResponse["data"],
+        error: getErrorMessage(err),
+      };
     }
   },
 };
@@ -74,7 +107,7 @@ export const adminUsersApi = {
 
       const query = queryParams.toString();
       const url = `/admin-dashboard/users/${query ? "?" + query : ""}`;
-      const data = await apiClient.get<any>(url);
+      const data = await apiClient.get<RawApiResponse<UserProfile[]>>(url);
 
       if (data.success) {
         return {
@@ -84,8 +117,8 @@ export const adminUsersApi = {
         };
       }
       return { success: false, data: [], error: data.error };
-    } catch (err: any) {
-      return { success: false, data: [], error: err.message };
+    } catch (err) {
+      return { success: false, data: [], error: getErrorMessage(err) };
     }
   },
 
@@ -93,15 +126,15 @@ export const adminUsersApi = {
     userId: string,
   ): Promise<EdgeFunctionResponse<UserProfile>> => {
     try {
-      const data = await apiClient.get<any>(
+      const data = await apiClient.get<RawApiResponse<UserProfile>>(
         `/admin-dashboard/users/${userId}/`,
       );
       if (data.success) {
         return { success: true, data: data.data };
       }
       return { success: false, data: {} as UserProfile, error: data.error };
-    } catch (err: any) {
-      return { success: false, data: {} as UserProfile, error: err.message };
+    } catch (err) {
+      return { success: false, data: {} as UserProfile, error: getErrorMessage(err) };
     }
   },
 
@@ -109,16 +142,15 @@ export const adminUsersApi = {
     userId: string,
     amount: number,
     description?: string,
-  ): Promise<EdgeFunctionResponse<any>> => {
+  ): Promise<EdgeFunctionResponse<{ new_balance?: number }>> => {
     try {
-      const data = await apiClient.post<any>("/admin-dashboard/users/coins/", {
-        user_id: userId,
-        amount,
-        description,
-      });
-      return { success: data.success, data: data.data || data };
-    } catch (err: any) {
-      return { success: false, data: {}, error: err.message };
+      const data = await apiClient.post<RawApiResponse<{ new_balance?: number }>>(
+        "/admin-dashboard/users/coins/",
+        { user_id: userId, amount, description },
+      );
+      return { success: data.success, data: data.data || {} };
+    } catch (err) {
+      return { success: false, data: {}, error: getErrorMessage(err) };
     }
   },
 
@@ -127,9 +159,9 @@ export const adminUsersApi = {
     planType: string,
     status: string,
     expiresAt?: string,
-  ): Promise<EdgeFunctionResponse<any>> => {
+  ): Promise<EdgeFunctionResponse<unknown>> => {
     try {
-      const data = await apiClient.post<any>(
+      const data = await apiClient.post<RawApiResponse<unknown>>(
         "/admin-dashboard/users/subscription/",
         {
           user_id: userId,
@@ -139,8 +171,8 @@ export const adminUsersApi = {
         },
       );
       return { success: data.success, data: data.data || data };
-    } catch (err: any) {
-      return { success: false, data: {}, error: err.message };
+    } catch (err) {
+      return { success: false, data: {}, error: getErrorMessage(err) };
     }
   },
 };
@@ -153,7 +185,11 @@ export const adminPaymentsApi = {
     status?: string;
     page?: number;
     limit?: number;
-  }): Promise<EdgeFunctionResponse<PaymentRequest[]> & { counts?: any }> => {
+  }): Promise<
+    EdgeFunctionResponse<PaymentRequest[]> & {
+      counts?: Record<string, number>;
+    }
+  > => {
     try {
       const queryParams = new URLSearchParams();
       if (params?.status) queryParams.set("status", params.status);
@@ -162,7 +198,7 @@ export const adminPaymentsApi = {
 
       const query = queryParams.toString();
       const url = `/admin-dashboard/payments/${query ? "?" + query : ""}`;
-      const data = await apiClient.get<any>(url);
+      const data = await apiClient.get<RawApiResponse<PaymentRequest[]>>(url);
 
       if (data.success) {
         return {
@@ -173,31 +209,31 @@ export const adminPaymentsApi = {
         };
       }
       return { success: false, data: [], error: data.error };
-    } catch (err: any) {
-      return { success: false, data: [], error: err.message };
+    } catch (err) {
+      return { success: false, data: [], error: getErrorMessage(err) };
     }
   },
 
-  approve: async (paymentId: string): Promise<EdgeFunctionResponse<any>> => {
+  approve: async (paymentId: string): Promise<EdgeFunctionResponse<unknown>> => {
     try {
-      const data = await apiClient.post<any>(
+      const data = await apiClient.post<RawApiResponse<unknown>>(
         "/admin-dashboard/payments/approve/",
         {
           payment_id: paymentId,
         },
       );
       return { success: data.success, data: data.data || data };
-    } catch (err: any) {
-      return { success: false, data: {}, error: err.message };
+    } catch (err) {
+      return { success: false, data: {}, error: getErrorMessage(err) };
     }
   },
 
   reject: async (
     paymentId: string,
     reason: string,
-  ): Promise<EdgeFunctionResponse<any>> => {
+  ): Promise<EdgeFunctionResponse<unknown>> => {
     try {
-      const data = await apiClient.post<any>(
+      const data = await apiClient.post<RawApiResponse<unknown>>(
         "/admin-dashboard/payments/reject/",
         {
           payment_id: paymentId,
@@ -205,8 +241,8 @@ export const adminPaymentsApi = {
         },
       );
       return { success: data.success, data: data.data || data };
-    } catch (err: any) {
-      return { success: false, data: {}, error: err.message };
+    } catch (err) {
+      return { success: false, data: {}, error: getErrorMessage(err) };
     }
   },
 };
@@ -228,14 +264,14 @@ export const adminLogsApi = {
 
       const query = queryParams.toString();
       const url = `/admin-dashboard/logs/${query ? "?" + query : ""}`;
-      const data = await apiClient.get<any>(url);
+      const data = await apiClient.get<RawApiResponse<AdminLog[]>>(url);
 
       if (data.success) {
         return { success: true, data: data.data, pagination: data.pagination };
       }
       return { success: false, data: [], error: data.error };
-    } catch (err: any) {
-      return { success: false, data: [], error: err.message };
+    } catch (err) {
+      return { success: false, data: [], error: getErrorMessage(err) };
     }
   },
 
@@ -252,14 +288,14 @@ export const adminLogsApi = {
 
       const query = queryParams.toString();
       const url = `/admin-dashboard/coin-transactions/${query ? "?" + query : ""}`;
-      const data = await apiClient.get<any>(url);
+      const data = await apiClient.get<RawApiResponse<CoinTransaction[]>>(url);
 
       if (data.success) {
         return { success: true, data: data.data, pagination: data.pagination };
       }
       return { success: false, data: [], error: data.error };
-    } catch (err: any) {
-      return { success: false, data: [], error: err.message };
+    } catch (err) {
+      return { success: false, data: [], error: getErrorMessage(err) };
     }
   },
 };
@@ -268,7 +304,7 @@ export const adminLogsApi = {
 // REFERRALS
 // =====================================================
 export const adminReferralsApi = {
-  getTopReferrers: async (): Promise<EdgeFunctionResponse<any[]>> => {
+  getTopReferrers: async (): Promise<EdgeFunctionResponse<ReferralStats[]>> => {
     // Not implemented yet in Django backend
     return { success: true, data: [] };
   },

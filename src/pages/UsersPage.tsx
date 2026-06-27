@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { adminUsersApi } from '@/lib/admin-api';
+import { getErrorMessage } from '@/types';
 import type { UserProfile } from '@/types';
-import { 
-  Users, Search, Plus, Minus, Crown, 
-  Loader2, Award, Target, Calendar, Star,
+import {
+  Users, Search, Plus, Minus, Crown,
+  Loader2, Award, Target, Calendar, Star, AlertCircle, RefreshCw,
   ChevronLeft, ChevronRight, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,7 +25,9 @@ function getUserAvatar(user: UserProfile): string {
 export default function UsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -46,33 +49,39 @@ export default function UsersPage() {
   const [subAction, setSubAction] = useState<'activate' | 'cancel'>('activate');
   const [subProcessing, setSubProcessing] = useState(false);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [page]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const params: any = { page: page.toString(), limit: '20' };
-      if (search) params.search = search;
-      const response = await adminUsersApi.list(params);
+      setError('');
+      const response = await adminUsersApi.list({
+        page,
+        limit: 20,
+        search: appliedSearch || undefined,
+      });
       if (response.success) {
         setUsers(response.data || []);
         if (response.pagination) {
           setTotalPages(response.pagination.total_pages);
-          setPage(response.pagination.page);
         }
+      } else {
+        setError(response.error || 'Foydalanuvchilarni yuklashda xatolik');
       }
-    } catch (err: any) {
-      toast.error('Foydalanuvchilarni yuklashda xatolik');
+    } catch (err) {
+      const message = getErrorMessage(err, 'Foydalanuvchilarni yuklashda xatolik');
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, appliedSearch]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleSearch = () => {
     setPage(1);
-    fetchUsers();
+    setAppliedSearch(search);
   };
 
   const handleUserClick = async (user: UserProfile) => {
@@ -82,7 +91,7 @@ export default function UsersPage() {
       if (response.success) {
         setSelectedUser(response.data);
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Foydalanuvchi ma\'lumotlarini yuklashda xatolik');
     } finally {
       setUserDetailLoading(false);
@@ -112,8 +121,8 @@ export default function UsersPage() {
           handleUserClick(selectedUser);
         }
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Xatolik yuz berdi');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     } finally {
       setCoinProcessing(false);
     }
@@ -138,8 +147,8 @@ export default function UsersPage() {
           handleUserClick(selectedUser);
         }
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Xatolik yuz berdi');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSubProcessing(false);
     }
@@ -188,6 +197,15 @@ export default function UsersPage() {
               <div className="loading-state">
                 <Loader2 className="animate-spin" size={32} />
                 <p>Yuklanmoqda...</p>
+              </div>
+            ) : error ? (
+              <div className="page-error-state">
+                <AlertCircle size={40} />
+                <h2>Yuklab bo'lmadi</h2>
+                <p>{error}</p>
+                <button className="retry-btn" onClick={fetchUsers}>
+                  <RefreshCw size={16} /> Qayta urinish
+                </button>
               </div>
             ) : users.length === 0 ? (
               <div className="empty-state">

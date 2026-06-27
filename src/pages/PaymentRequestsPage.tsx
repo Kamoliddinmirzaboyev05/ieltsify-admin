@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { adminPaymentsApi } from "@/lib/admin-api";
+import { getErrorMessage } from "@/types";
 import type { PaymentRequest } from "@/types";
 import {
   DollarSign,
@@ -12,7 +13,16 @@ import {
   Image,
   MessageSquare,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
+
+interface PaymentCounts {
+  pending: number;
+  approved: number;
+  rejected: number;
+  total: number;
+}
 import { toast } from "sonner";
 import "./PaymentsPage.css";
 
@@ -33,40 +43,46 @@ export default function PaymentRequestsPage() {
   const [imageModal, setImageModal] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const [counts, setCounts] = useState<any>({
+  const [error, setError] = useState("");
+  const [counts, setCounts] = useState<PaymentCounts>({
     pending: 0,
     approved: 0,
     rejected: 0,
     total: 0,
   });
 
-  useEffect(() => {
-    fetchPayments();
-  }, [filter, page]);
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
-      const params: any = { page: page.toString(), limit: "20" };
-      if (filter !== "all") params.status = filter;
-      if (search) params.search = search;
-
-      const response = await adminPaymentsApi.list(params);
+      setError("");
+      const response = await adminPaymentsApi.list({
+        page,
+        limit: 20,
+        status: filter !== "all" ? filter : undefined,
+      });
       if (response.success) {
         setPayments(response.data || []);
         if (response.pagination) {
           setTotalPages(response.pagination.total_pages);
         }
-        if ((response as any).counts) {
-          setCounts((response as any).counts);
+        if (response.counts) {
+          setCounts((prev) => ({ ...prev, ...response.counts }));
         }
+      } else {
+        setError(response.error || "To'lovlarni yuklashda xatolik");
       }
-    } catch (err: any) {
-      toast.error("To'lovlarni yuklashda xatolik");
+    } catch (err) {
+      const message = getErrorMessage(err, "To'lovlarni yuklashda xatolik");
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, page]);
+
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
 
   const handleApprove = async (paymentId: string) => {
     try {
@@ -76,8 +92,8 @@ export default function PaymentRequestsPage() {
         toast.success("To'lov tasdiqlandi! Coinlar qo'shildi.");
         fetchPayments();
       }
-    } catch (err: any) {
-      toast.error(err.message || "Tasdiqlashda xatolik");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Tasdiqlashda xatolik"));
     } finally {
       setProcessingId(null);
     }
@@ -97,8 +113,8 @@ export default function PaymentRequestsPage() {
         setRejectReason("");
         fetchPayments();
       }
-    } catch (err: any) {
-      toast.error(err.message || "Rad etishda xatolik");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Rad etishda xatolik"));
     } finally {
       setProcessingId(null);
     }
@@ -188,6 +204,15 @@ export default function PaymentRequestsPage() {
           <div className="loading-state">
             <Loader2 className="animate-spin" size={32} />
             <p>Yuklanmoqda...</p>
+          </div>
+        ) : error ? (
+          <div className="page-error-state">
+            <AlertCircle size={40} />
+            <h2>Yuklab bo'lmadi</h2>
+            <p>{error}</p>
+            <button className="retry-btn" onClick={fetchPayments}>
+              <RefreshCw size={16} /> Qayta urinish
+            </button>
           </div>
         ) : payments.length === 0 ? (
           <div className="empty-state">

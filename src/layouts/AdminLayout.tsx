@@ -10,7 +10,6 @@ import {
   Headphones,
   FileStack,
   User,
-  Bell,
   Sun,
   Moon,
   LogOut,
@@ -101,10 +100,6 @@ export default function AdminLayout() {
           <div className="header-actions">
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === 'dark' ? <Sun /> : <Moon />}
-            </Button>
-
-            <Button variant="ghost" size="icon">
-              <Bell />
             </Button>
 
             <div className="header-user">
