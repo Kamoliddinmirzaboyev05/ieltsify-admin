@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://ieltsify-backend.onrender.com";
+  import.meta.env.VITE_API_BASE_URL || "https://api.ieltsfy.uz";
 
 // API Response Types
 export interface LoginResponse {

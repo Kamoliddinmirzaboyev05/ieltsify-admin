@@ -4,12 +4,23 @@ import { useAuth } from '@/contexts/AuthContextBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, User, Lock, GraduationCap, Shield } from 'lucide-react';
+import {
+  LogIn,
+  User,
+  Lock,
+  GraduationCap,
+  Shield,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ArrowRight,
+} from 'lucide-react';
 import './LoginPage.css';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
@@ -38,18 +49,33 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-background">
+      <div className="login-background" aria-hidden="true">
         <div className="login-gradient-orb orb-1"></div>
         <div className="login-gradient-orb orb-2"></div>
         <div className="login-gradient-orb orb-3"></div>
+        <div className="login-grid"></div>
       </div>
 
       <div className="login-container">
-        <div className="login-left">
+        {/* Branding panel */}
+        <aside className="login-left">
           <div className="login-brand">
-            <img src="/ieltsifylogo.png" alt="IELTSIFY" className="login-brand-logo" />
+            <div className="login-brand-logo-ring">
+              <img
+                src="/ieltsifylogo.png"
+                alt="IELTSIFY"
+                className="login-brand-logo"
+              />
+            </div>
             <h1 className="login-brand-title">IELTSIFY</h1>
-            <p className="login-brand-subtitle">Admin Panel</p>
+            <span className="login-brand-badge">
+              <Sparkles className="badge-spark" />
+              Admin Panel
+            </span>
+            <p className="login-brand-tagline">
+              IELTS platformangizni bitta zamonaviy boshqaruv markazidan
+              nazorat qiling.
+            </p>
           </div>
 
           <div className="login-features">
@@ -58,8 +84,8 @@ export default function LoginPage() {
                 <Shield />
               </div>
               <div className="feature-content">
-                <h3>Xavfsiz Kirish</h3>
-                <p>Zamonaviy shifrlash texnologiyasi bilan himoyalangan</p>
+                <h3>Xavfsiz kirish</h3>
+                <p>Zamonaviy shifrlash va token autentifikatsiyasi.</p>
               </div>
             </div>
             <div className="login-feature">
@@ -67,21 +93,42 @@ export default function LoginPage() {
                 <GraduationCap />
               </div>
               <div className="feature-content">
-                <h3>Kuchli Boshqaruv</h3>
-                <p>Barcha IELTS materiallarini bir joydan boshqaring</p>
+                <h3>Kuchli boshqaruv</h3>
+                <p>Barcha IELTS materiallarini bir joydan boshqaring.</p>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="login-right">
+          <div className="login-stats">
+            <div className="login-stat">
+              <span className="stat-value">4</span>
+              <span className="stat-label">Modul</span>
+            </div>
+            <div className="login-stat">
+              <span className="stat-value">AI</span>
+              <span className="stat-label">Baholash</span>
+            </div>
+            <div className="login-stat">
+              <span className="stat-value">24/7</span>
+              <span className="stat-label">Mavjud</span>
+            </div>
+          </div>
+        </aside>
+
+        {/* Form panel */}
+        <main className="login-right">
           <div className="login-card">
             <div className="login-card-header">
+              <div className="login-mobile-logo">
+                <img src="/ieltsifylogo.png" alt="IELTSIFY" />
+              </div>
               <div className="login-icon-wrapper">
                 <LogIn className="login-icon" />
               </div>
               <h2 className="login-title">Xush kelibsiz!</h2>
-              <p className="login-subtitle">Admin paneliga kirish uchun ma'lumotlaringizni kiriting</p>
+              <p className="login-subtitle">
+                Admin paneliga kirish uchun ma'lumotlaringizni kiriting
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="login-form">
@@ -109,20 +156,30 @@ export default function LoginPage() {
                   <Lock className="input-icon" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="input-with-icon"
+                    className="input-with-icon input-with-toggle"
                     disabled={isLoading}
                     autoComplete="current-password"
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={isLoading}
+                    aria-label={showPassword ? 'Parolni yashirish' : 'Parolni korsatish'}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
               </div>
 
               {error && (
-                <div className="login-error">
+                <div className="login-error" role="alert">
                   <span className="error-icon">⚠️</span>
                   <span>{error}</span>
                 </div>
@@ -136,14 +193,18 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    <LogIn className="button-icon" />
                     Kirish
+                    <ArrowRight className="button-icon" />
                   </>
                 )}
               </Button>
             </form>
+
+            <p className="login-footer">
+              © {new Date().getFullYear()} IELTSIFY • Admin Panel
+            </p>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
