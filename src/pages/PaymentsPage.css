@@ -15,7 +15,7 @@
 .page-title-icon {
   width: 32px;
   height: 32px;
-  color: var(--primary-color, #4f46e5);
+  color: var(--primary-color, #d99e1e);
 }
 
 .page-title {
@@ -51,14 +51,14 @@
 }
 
 .filter-tab:hover {
-  border-color: var(--primary-color, #4f46e5);
-  color: var(--primary-color, #4f46e5);
+  border-color: var(--primary-color, #d99e1e);
+  color: var(--primary-color, #d99e1e);
 }
 
 .filter-tab.active {
-  background: var(--primary-color, #4f46e5);
+  background: var(--primary-color, #d99e1e);
   color: white;
-  border-color: var(--primary-color, #4f46e5);
+  border-color: var(--primary-color, #d99e1e);
 }
 
 .search-bar {
@@ -181,8 +181,8 @@
 }
 
 .status-approved {
-  background: #d1fae5;
-  color: #065f46;
+  background: #fbeecb;
+  color: #7d5a12;
 }
 
 .status-rejected {
@@ -199,7 +199,7 @@
 }
 
 .btn-approve {
-  background: #059669 !important;
+  background: #d99e1e !important;
   color: white !important;
   font-size: 12px !important;
   display: flex;
@@ -208,7 +208,7 @@
 }
 
 .btn-approve:hover {
-  background: #047857 !important;
+  background: #b8841a !important;
 }
 
 .col-actions .btn-destructive {
@@ -340,7 +340,7 @@
 
 .quick-action-btn:hover {
   border-color: var(--primary-color);
-  background: var(--primary-color-light, #eef2ff);
+  background: var(--primary-color-light, #fdf7ea);
 }
 
 /* Responsive */

@@ -1,21 +1,21 @@
 :root {
   --background: #ffffff;
-  --foreground: #0f172a;
+  --foreground: #0b1d3a;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #10b981;
+  --card-foreground: #0b1d3a;
+  --primary: #f0b429;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
+  --secondary-foreground: #0b1d3a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
   --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --accent-foreground: #0b1d3a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #10b981;
+  --ring: #f0b429;
   --radius: 0.5rem;
 
   /* Aliases: legacy page-CSS token names mapped to the design system.
@@ -24,7 +24,7 @@
   --text-secondary: var(--muted-foreground);
   --border-color: var(--border);
   --primary-color: var(--primary);
-  --primary-color-light: rgba(16, 185, 129, 0.12);
+  --primary-color-light: rgba(240, 180, 41, 0.12);
   --bg-primary: var(--background);
   --bg-secondary: var(--card);
   --bg-tertiary: var(--muted);
@@ -35,19 +35,19 @@
   --foreground: #f8fafc;
   --card: #1a1f35;
   --card-foreground: #f8fafc;
-  --primary: #10b981;
+  --primary: #f0b429;
   --primary-foreground: #022c22;
-  --secondary: #1e293b;
+  --secondary: #102a4f;
   --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
+  --muted: #102a4f;
   --muted-foreground: #94a3b8;
   --accent: #1e2538;
   --accent-foreground: #f8fafc;
   --destructive: #ef4444;
   --destructive-foreground: #f8fafc;
   --border: #2d3548;
-  --input: #1e293b;
-  --ring: #047857;
+  --input: #102a4f;
+  --ring: #b8841a;
 }
 
 * {
@@ -97,7 +97,7 @@ input, textarea, select {
 
 /* Selection */
 ::selection {
-  background: rgba(16, 185, 129, 0.3);
+  background: rgba(240, 180, 41, 0.3);
   color: var(--foreground);
 }
 

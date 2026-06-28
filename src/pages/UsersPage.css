@@ -70,7 +70,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--primary-color, #4f46e5);
+  background: var(--primary-color, #d99e1e);
   color: white;
   display: flex;
   align-items: center;
@@ -111,8 +111,8 @@
 }
 
 .role-user {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #fbeecb;
+  color: #b8841a;
 }
 
 .role-admin {
@@ -139,8 +139,8 @@
 }
 
 .sub-badge.active {
-  background: #d1fae5;
-  color: #065f46;
+  background: #fbeecb;
+  color: #7d5a12;
 }
 
 .sub-badge.inactive {
@@ -176,7 +176,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--primary-color, #4f46e5);
+  background: var(--primary-color, #d99e1e);
   color: white;
   display: flex;
   align-items: center;
@@ -249,7 +249,7 @@
   font-size: 12px;
   padding: 4px 12px;
   border-radius: 20px;
-  background: #e0e7ff;
+  background: #fbeecb;
   color: #3730a3;
 }
 
@@ -289,8 +289,8 @@
 }
 
 .status-active {
-  background: #d1fae5;
-  color: #065f46;
+  background: #fbeecb;
+  color: #7d5a12;
 }
 
 .status-cancelled {

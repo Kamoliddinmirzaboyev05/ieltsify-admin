@@ -96,7 +96,7 @@
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 4px;
-  background: #e0e7ff;
+  background: #fbeecb;
   color: #3730a3;
 }
 
@@ -173,7 +173,7 @@
 }
 
 .amount-positive {
-  color: #059669;
+  color: #d99e1e;
 }
 
 .amount-negative {
@@ -248,8 +248,8 @@
 }
 
 .referral-item:nth-child(3) .referral-rank {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #fbeecb;
+  color: #b8841a;
 }
 
 .ref-user {
@@ -297,7 +297,7 @@
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), #818cf8);
+  background: linear-gradient(90deg, var(--primary-color), #f6c34a);
   border-radius: 4px;
   transition: width 0.5s ease;
 }

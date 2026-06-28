@@ -142,11 +142,11 @@
 
 /* Specific border colors handled by inline styles/classes, 
    but we can enhance the left border effect */
-.border-blue::before { background-color: #3b82f6; }
+.border-blue::before { background-color: #f6c34a; }
 .border-yellow::before { background-color: #f59e0b; }
-.border-green::before { background-color: #10b981; }
+.border-green::before { background-color: #f0b429; }
 .border-purple::before { background-color: #8b5cf6; }
-.border-indigo::before { background-color: #6366f1; }
+.border-indigo::before { background-color: #f0b429; }
 .border-pink::before { background-color: #ec4899; }
 .border-orange::before { background-color: #f97316; }
 .border-cyan::before { background-color: #06b6d4; }
@@ -192,7 +192,7 @@
 }
 
 .stat-change.up {
-  color: #10b981;
+  color: #f0b429;
 }
 
 .stat-change.down {
@@ -226,20 +226,20 @@
 }
 
 /* Color Variants */
-.bg-blue { background: rgba(59, 130, 246, 0.1); }
-.text-blue { color: #3b82f6; }
+.bg-blue { background: rgba(246, 195, 74, 0.1); }
+.text-blue { color: #f6c34a; }
 
 .bg-yellow { background: rgba(245, 158, 11, 0.1); }
 .text-yellow { color: #f59e0b; }
 
-.bg-green { background: rgba(16, 185, 129, 0.1); }
-.text-green { color: #10b981; }
+.bg-green { background: rgba(240, 180, 41, 0.1); }
+.text-green { color: #f0b429; }
 
 .bg-purple { background: rgba(139, 92, 246, 0.1); }
 .text-purple { color: #8b5cf6; }
 
-.bg-indigo { background: rgba(99, 102, 241, 0.1); }
-.text-indigo { color: #6366f1; }
+.bg-indigo { background: rgba(240, 180, 41, 0.1); }
+.text-indigo { color: #f0b429; }
 
 .bg-pink { background: rgba(236, 72, 153, 0.1); }
 .text-pink { color: #ec4899; }
@@ -291,7 +291,7 @@
 
 .chart-bar {
   width: 60%;
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(180deg, #f0b429 0%, #d99e1e 100%);
   border-radius: 0.375rem 0.375rem 0 0;
   transition: all 0.3s;
   position: relative;
@@ -372,10 +372,10 @@
   color: white;
 }
 
-.activity-icon.bg-blue svg { color: #3b82f6; }
+.activity-icon.bg-blue svg { color: #f6c34a; }
 .activity-icon.bg-yellow svg { color: #f59e0b; }
 .activity-icon.bg-purple svg { color: #8b5cf6; }
-.activity-icon.bg-green svg { color: #10b981; }
+.activity-icon.bg-green svg { color: #f0b429; }
 .activity-icon.bg-orange svg { color: #f97316; }
 .activity-icon.bg-cyan svg { color: #06b6d4; }
 
