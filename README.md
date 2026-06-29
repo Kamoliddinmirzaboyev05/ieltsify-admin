@@ -28,7 +28,7 @@ Professional admin panel for managing IELTS learning materials with modern desig
 
 ### Base URL
 ```
-https://ieltsify.pythonanywhere.com
+https://api.ieltsfy.uz
 ```
 
 ### Authentication Endpoint
@@ -355,7 +355,7 @@ Output: `dist/` directory
 Create `.env` file:
 
 ```env
-VITE_API_BASE_URL=https://ieltsify.pythonanywhere.com
+VITE_API_BASE_URL=https://api.ieltsfy.uz
 ```
 
 ### Deploy

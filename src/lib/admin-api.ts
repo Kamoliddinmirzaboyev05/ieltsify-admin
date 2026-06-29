@@ -9,6 +9,9 @@ import type {
   ReferralStats,
   EdgeFunctionResponse,
   RawApiResponse,
+  SubscriptionPlan,
+  SubscriptionPlanWrite,
+  PaginatedResponse,
 } from "@/types";
 
 /** Loose shape of the Django /admin-dashboard/ payload (pre-mapping). */
@@ -307,5 +310,62 @@ export const adminReferralsApi = {
   getTopReferrers: async (): Promise<EdgeFunctionResponse<ReferralStats[]>> => {
     // Not implemented yet in Django backend
     return { success: true, data: [] };
+  },
+};
+
+// =====================================================
+// SUBSCRIPTION PLANS (Tariflar) - /subscription-plans/
+// GET: IsAuthenticated, POST/PUT/PATCH/DELETE: admin only
+// =====================================================
+export const adminPlansApi = {
+  list: async (): Promise<EdgeFunctionResponse<SubscriptionPlan[]>> => {
+    try {
+      // DRF PageNumberPagination -> { count, results }; fallback to raw array.
+      const data = await apiClient.get<
+        PaginatedResponse<SubscriptionPlan> | SubscriptionPlan[]
+      >("/subscription-plans/");
+      const plans = Array.isArray(data) ? data : data.results;
+      return { success: true, data: plans ?? [] };
+    } catch (err) {
+      return { success: false, data: [], error: getErrorMessage(err) };
+    }
+  },
+
+  create: async (
+    payload: SubscriptionPlanWrite,
+  ): Promise<EdgeFunctionResponse<SubscriptionPlan | null>> => {
+    try {
+      const data = await apiClient.post<SubscriptionPlan>(
+        "/subscription-plans/",
+        payload,
+      );
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, data: null, error: getErrorMessage(err) };
+    }
+  },
+
+  update: async (
+    id: number,
+    payload: SubscriptionPlanWrite,
+  ): Promise<EdgeFunctionResponse<SubscriptionPlan | null>> => {
+    try {
+      const data = await apiClient.put<SubscriptionPlan>(
+        `/subscription-plans/${id}/`,
+        payload,
+      );
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, data: null, error: getErrorMessage(err) };
+    }
+  },
+
+  remove: async (id: number): Promise<EdgeFunctionResponse<unknown>> => {
+    try {
+      await apiClient.delete(`/subscription-plans/${id}/`);
+      return { success: true, data: {} };
+    } catch (err) {
+      return { success: false, data: {}, error: getErrorMessage(err) };
+    }
   },
 };

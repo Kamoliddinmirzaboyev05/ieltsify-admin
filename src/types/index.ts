@@ -179,6 +179,44 @@ export interface PaginatedResponse<T> {
 }
 
 // =====================================================
+// SUBSCRIPTION PLANS (Tariflar)
+// =====================================================
+
+export interface SubscriptionPlan {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  price_uzs: number;
+  duration_days: number;
+  duration_label?: string;
+  price_per_day?: number;
+  included_coins: number;
+  is_unlimited_reading: boolean;
+  is_unlimited_listening: boolean;
+  is_unlimited_vocab: boolean;
+  daily_vocab_limit: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Payload for create/update — matches SubscriptionPlanWriteSerializer. */
+export interface SubscriptionPlanWrite {
+  code: string;
+  name: string;
+  description?: string | null;
+  price_uzs: number;
+  duration_days: number;
+  included_coins: number;
+  is_unlimited_reading: boolean;
+  is_unlimited_listening: boolean;
+  is_unlimited_vocab: boolean;
+  daily_vocab_limit: number | null;
+  is_active: boolean;
+}
+
+// =====================================================
 // ADMIN PANEL NEW TYPES
 // =====================================================
 

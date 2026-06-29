@@ -5,6 +5,7 @@ import AdminLayout from './layouts/AdminLayout';
 import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
 import PaymentRequestsPage from './pages/PaymentRequestsPage';
+import TariffsPage from './pages/TariffsPage';
 import SystemLogsPage from './pages/SystemLogsPage';
 import ListeningPage from './pages/ListeningPage';
 import ReadingPage from './pages/ReadingPage';
@@ -51,6 +52,11 @@ const AnimatedRoutes = () => {
           <Route path="payments" element={
             <PageTransition>
               <PaymentRequestsPage />
+            </PageTransition>
+          } />
+          <Route path="tariffs" element={
+            <PageTransition>
+              <TariffsPage />
             </PageTransition>
           } />
           <Route path="system-logs" element={
